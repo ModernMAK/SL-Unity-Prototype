@@ -19,6 +19,7 @@ public class SLObjectManager : SLBehaviour
     private object PrimParentifyQueueLock;
     [SerializeField] private int _maxUpdates = 10;
     private bool _createCamera;
+    public Shader DefaultShader => _defaultMaterial.shader;
 
     private void Awake()
     {

@@ -13,13 +13,15 @@ public class SLPrimitive : SLBehaviour
     public Mesh UnityMesh { get; private set; }
     public Texture[] UnityTextures { get; private set; }
 
+    public event EventHandler Initialized;
 
     protected virtual void Awake()
     {
         _callbacks = new Queue<Action>();
+        Initialized += StartRequests;
     }
 
-    private void Start()
+    private void StartRequests(object sender, EventArgs e)
     {
         RequestMesh();
         RequestTextures();
@@ -31,6 +33,7 @@ public class SLPrimitive : SLBehaviour
         if (Self != null)
             throw new ArgumentException("Primitive Object has already been initialized!", nameof(self));
         Self = self;
+        OnInitialized();
     }
 
     public void RequestMesh()
@@ -90,6 +93,10 @@ public class SLPrimitive : SLBehaviour
     {
         UnityTexturesUpdated?.Invoke(this, e);
     }
-    
 
+
+    protected virtual void OnInitialized()
+    {
+        Initialized?.Invoke(this, EventArgs.Empty);
+    }
 }
