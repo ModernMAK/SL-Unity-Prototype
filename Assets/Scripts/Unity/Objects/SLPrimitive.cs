@@ -8,7 +8,6 @@ using Mesh = UnityEngine.Mesh;
 public class SLPrimitive : SLBehaviour
 {
     private static readonly IRendering MeshGen = new MeshmerizerR();
-    private Queue<Action> _callbacks;
     public Primitive Self { get; private set; }
     public Mesh UnityMesh { get; private set; }
     public Texture[] UnityTextures { get; private set; }
@@ -17,7 +16,6 @@ public class SLPrimitive : SLBehaviour
 
     protected virtual void Awake()
     {
-        _callbacks = new Queue<Action>();
         Initialized += StartRequests;
     }
 
@@ -71,15 +69,6 @@ public class SLPrimitive : SLBehaviour
         OnUnityMeshUpdated(new UnityMeshUpdatedArgs(obj));
     }
 
-    private void FixedUpdate()
-    {
-        if(_callbacks.Count == 0)
-            return;
-        var act = _callbacks.Dequeue();
-        act();
-
-
-    }
 
 
     public event EventHandler<UnityMeshUpdatedArgs> UnityMeshUpdated;

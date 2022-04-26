@@ -1,12 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
-using OpenMetaverse.Rendering;
 using UnityEngine;
 using Texture = UnityEngine.Texture;
-using Object = System.Object;
 
 // public class TextureCache : IDictionary<Primitive,Texture>
 // {
@@ -139,32 +136,15 @@ using Object = System.Object;
 [RequireComponent(typeof(SLObjectManager))]
 public class SLTextureManager : SLBehaviour
 {
-    public int MaxDownloadsPerTick = 8;
-    public int MaxRequestsPerTick = 8;
-    private Dictionary<UUID, Texture> _cache;
-    private Queue<Tuple<UUID,AssetTexture>> _downloadedQueue;
-    private Queue<UUID> _requestQueue;
-    private object _downloadedQueueLock;
-    private object _requestQueueLock;
+    private ThreadDictionary<UUID, Texture> _cache;
     private Dictionary<UUID, Action<Texture>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
 
 
     private void Awake()
     {
         _callbacks = new Dictionary<UUID, Action<Texture>>();
-        _cache = new Dictionary<UUID, Texture>();
-        _downloadedQueueLock = new object();
-        _requestQueueLock = new object();
-        lock (_downloadedQueueLock)
-        {
-            _downloadedQueue = new Queue<Tuple<UUID,AssetTexture>>();
-            
-        }
+        _cache = new ThreadDictionary<UUID, Texture>();
 
-        lock (_requestQueueLock)
-        {
-            _requestQueue = new Queue<UUID>();
-        }
         TextureCreated += TryCallback;
     }
 
@@ -175,45 +155,14 @@ public class SLTextureManager : SLBehaviour
         _callbacks.Remove(e.Id);
     }
 
-    private void FixedUpdate()
-    {
-        UUID id;
-        lock (_downloadedQueueLock)
-        {
-            var downloads = 0;
-            while (_downloadedQueue.Count > 0 && downloads < MaxDownloadsPerTick)
-            {
-                downloads++;
-                var primTextureTuple = _downloadedQueue.Dequeue();
-                id = primTextureTuple.Item1;
-                var texture = primTextureTuple.Item2;
-                CreateTexture(id,texture);
-            }
-        }
-
-        lock (_requestQueueLock)
-        {
-            var requests = 0;
-            while (_requestQueue.Count > 0 && requests < MaxRequestsPerTick)
-            {
-                requests++;
-                id = _requestQueue.Dequeue();
-                DownloadTexture(id);
-            }
-        }
-    }
-
     public void RequestTexture(UUID id, Action<Texture> callback)
     {
         if (_cache.TryGetValue(id, out var texture))
             callback(texture);
         else
         {
-            lock (_requestQueueLock)
-            {
-                _requestQueue.Enqueue(id);
-                _callbacks[id] = callback;
-            }
+            _callbacks[id] = callback;
+            Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
         }
     }
     
@@ -232,10 +181,8 @@ public class SLTextureManager : SLBehaviour
 
     private void TextureDownloaded(TextureRequestState state, AssetTexture assetTexture)
     {
-        lock (_downloadedQueueLock)
-        {
-            _downloadedQueue.Enqueue(new Tuple<UUID, AssetTexture>(assetTexture.AssetID,assetTexture));
-        }
+        Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID,assetTexture));
+        
     }
     //
     // private voidTextureDownloaded(Primitive primitive)
@@ -269,9 +216,18 @@ public class SLTextureManager : SLBehaviour
     //     return InternalCallback;
     // }
 
-    private void CreateTexture(UUID id, AssetTexture slTexture)
+    private void ConvertTexture(UUID id, AssetTexture slTexture)
     {
-        var uTexture = slTexture.ToUnity();
-        OnUnityTextureUpdated(new TextureCreatedArgs(id, uTexture));
+        void Internal()
+        {
+            var uTexture = UTexture.FromSL(slTexture);
+            Manager.Threading.Unity.Global.Enqueue(() => CreateTexture(id,uTexture));
+        }
+    }
+
+    private void CreateTexture(UUID id, UTexture uTexture)
+    {
+        var texture = uTexture.ToUnity();
+        OnUnityTextureUpdated(new TextureCreatedArgs(id, texture));
     }
 }

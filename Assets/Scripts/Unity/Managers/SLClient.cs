@@ -410,8 +410,7 @@ public class SLClient : MonoBehaviour, IGridClient
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-            throw new InvalidOperationException("Cannot have two instances of an SLClient, it should be a Singleton!");
+        Assertions.AssertSingleton(this,Instance,nameof(SLClient));
         Instance = this;
         InternalClient = new UnityGridClient();
     }

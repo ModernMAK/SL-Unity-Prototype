@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+//using OpenJpegDotNet.IO;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using OpenMetaverse.Imaging;
@@ -10,6 +12,8 @@ using Mesh = UnityEngine.Mesh;
 using Quaternion = UnityEngine.Quaternion;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
+// using FreeImageApi;
+using FreeImageAPI;
 
 public static class SLUnityConversions
 {
@@ -33,6 +37,7 @@ public static class SLUnityConversions
     /// </remarks>
     public static Quaternion ToUnity(this OpenMetaverse.Quaternion q, bool upIsZ = true) => upIsZ ? new Quaternion(q.X, q.Z, q.Y, -q.W) : new Quaternion(q.X, q.Y, q.Z, q.W);
 
+    [Obsolete("Use UMeshData")]
     public static Mesh ToUnity(this OpenMetaverse.Rendering.FacetedMesh slMesh)
     {
         var uMesh = new Mesh();
@@ -79,12 +84,32 @@ public static class SLUnityConversions
         return uMesh;
     }
 
+    [Obsolete("Use UTexture FromSL")]
     public static Texture ToUnity(this AssetTexture assetTexture)
     {
-        var texture = new Texture2D(8, 8);
-        if (texture.LoadImage(assetTexture.AssetData))
-            return texture;
-        throw new Exception("Failed to produce a texture!");
+        using var inStream = new MemoryStream(assetTexture.AssetData);
+        var bitmap = FreeImage.LoadFromStream(inStream);
+        using var outStream = new MemoryStream();
+        if (!FreeImage.SaveToStream(bitmap, outStream, FREE_IMAGE_FORMAT.FIF_PNG))
+            throw new InvalidOperationException("Image failed to convert (JP2->PNG)!");
+        var w = FreeImage.GetWidth(bitmap);
+        var h = FreeImage.GetHeight(bitmap);
+        var tex = new Texture2D((int)w, (int)h);
+        if(!tex.LoadImage(outStream.GetBuffer()))
+            throw new InvalidOperationException("Image failed to convert (PNG->Tex2D)!");
+        return tex;
+
+        // var fPath = $"{Application.persistentDataPath}\\{assetTexture.AssetID}.jp2";
+        // Debug.Log(fPath);
+        // using(var fStream = File.Open(fPath,FileMode.OpenOrCreate))
+        //     fStream.Write(assetTexture.AssetData,0,assetTexture.AssetData.Length);
+        // // Debug.Break();
+        // throw new NotImplementedException();
+
+        // var texture = new Texture2D(8, 8);
+        // if (texture.LoadImage(assetTexture.AssetData))
+        //     return texture;
+        // throw new Exception("Failed to produce a texture!");
         //     if (!assetTexture.Decode())
         //         throw new Exception("Decode texture failed!");
         //     var img = assetTexture.Image;
@@ -110,6 +135,39 @@ public static class SLUnityConversions
 
 }
 
+public class UTexture
+{
+    public int Width { get; private set; }
+    public int Height { get; private set; }
+    public byte[] Data { get; private set; }
+
+    public static UTexture FromSL(AssetTexture assetTexture)
+    {
+            
+        using var inStream = new MemoryStream(assetTexture.AssetData);
+        var bitmap = FreeImage.LoadFromStream(inStream);
+        using var outStream = new MemoryStream();
+        if (!FreeImage.SaveToStream(bitmap, outStream, FREE_IMAGE_FORMAT.FIF_PNG))
+            throw new InvalidOperationException("Image failed to convert (JP2->PNG)!");
+        var w = FreeImage.GetWidth(bitmap);
+        var h = FreeImage.GetHeight(bitmap);
+        return new UTexture()
+        {
+            Width = (int)w,
+            Height = (int)h,
+            Data = outStream.GetBuffer()
+        };
+    }
+
+    public Texture2D ToUnity()
+    {
+        var tex = new Texture2D(Width, Height);
+        if(!tex.LoadImage(Data))
+            throw new InvalidOperationException("Image failed to convert (PNG->Tex2D)!");
+        return tex;
+    }
+
+}
 public static class SLMeshUtil
 {
     private static readonly DetailLevel[] DetailLevels = new []
