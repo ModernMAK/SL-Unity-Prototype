@@ -81,7 +81,7 @@ public class ActionGroup
 
 }
 
-[RequireComponent(typeof(SLObjectManager))]
+[RequireComponent(typeof(SLPrimitiveManager))]
 public class SLThreadManager : SLBehaviour
 {
     public ActionGroup Unity { get; private set; }

@@ -153,7 +153,7 @@ public class MeshCache : Threadable, IDictionary<Primitive,Mesh>
     public ICollection<Mesh> Values => throw new NotImplementedException();
 }
 
-[RequireComponent(typeof(SLObjectManager))]
+[RequireComponent(typeof(SLPrimitiveManager))]
 public class SLMeshManager : SLBehaviour
 {
     

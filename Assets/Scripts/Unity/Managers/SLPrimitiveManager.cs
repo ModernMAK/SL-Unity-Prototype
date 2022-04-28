@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using OpenMetaverse;
 using UnityEngine;
 
-public class SLObjectManager : SLBehaviour
+public class SLPrimitiveManager : SLBehaviour
 {
     //LocalID seems to change, so use UUID
     //Then use Libre's Primtive table to fetchh parent?
@@ -157,6 +157,7 @@ public class SLObjectManager : SLBehaviour
         if (prim == null)
             throw new NullReferenceException("Cannot create a null primitive!");
         var go = Instantiate(_primtivePrefab, prim.Position.ToUnity(), prim.Rotation.ToUnity(), _container.transform);
+        go.name = $"Primitive `{prim.ID}`";
         go.transform.localScale = prim.Scale.ToUnity();
         //TODO move to SLPrimitive
         //Parenting should belong to primitive and be done in initialize (this would also allow us to hide our instantiated object until all

@@ -133,7 +133,7 @@ using Texture = UnityEngine.Texture;
 //     public ICollection<Texture> Values => throw new NotImplementedException();
 // }
 
-[RequireComponent(typeof(SLObjectManager))]
+[RequireComponent(typeof(SLPrimitiveManager))]
 public class SLTextureManager : SLBehaviour
 {
     private ThreadDictionary<UUID, Texture> _cache;
@@ -176,13 +176,20 @@ public class SLTextureManager : SLBehaviour
     }
     private void DownloadTexture(UUID texture)
     {
-        Manager.Client.Assets.RequestImage(texture,TextureDownloaded);
+        Manager.Client.Assets.RequestImage(texture, ImageType.Normal,TextureDownloaded);
     }
 
     private void TextureDownloaded(TextureRequestState state, AssetTexture assetTexture)
     {
-        Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID,assetTexture));
-        
+        if (state == TextureRequestState.Finished)
+        {
+            Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID, assetTexture));
+        }
+        else
+        {
+            throw new Exception("Something happened while downloading textures!");
+        }
+
     }
     //
     // private voidTextureDownloaded(Primitive primitive)
@@ -218,11 +225,9 @@ public class SLTextureManager : SLBehaviour
 
     private void ConvertTexture(UUID id, AssetTexture slTexture)
     {
-        void Internal()
-        {
-            var uTexture = UTexture.FromSL(slTexture);
-            Manager.Threading.Unity.Global.Enqueue(() => CreateTexture(id,uTexture));
-        }
+        var uTexture = UTexture.FromSL(slTexture);
+        Manager.Threading.Unity.Global.Enqueue(() => CreateTexture(id,uTexture));
+    
     }
 
     private void CreateTexture(UUID id, UTexture uTexture)

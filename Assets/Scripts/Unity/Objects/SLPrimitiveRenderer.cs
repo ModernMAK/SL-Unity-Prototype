@@ -35,7 +35,7 @@ public class SLPrimitiveRenderer : SLBehaviour
         _meshRenderer = GetComponent<MeshRenderer>();
         _primitive.UnityMeshUpdated += PrimitiveOnUnityMeshUpdated;
         _primitive.UnityTexturesUpdated += PrimitiveOnUnityTexturesUpdated;
-        _primitive.Initialized += PrimitiveOnInitialized;
+        // _primitive.Initialized += PrimitiveOnInitialized;
         // if (SimpleShader == null)
         //     SimpleShader = ;
         // if (SimpleShader == null)
@@ -47,25 +47,25 @@ public class SLPrimitiveRenderer : SLBehaviour
         // }
     }
 
-    private void PrimitiveOnInitialized(object sender, EventArgs e)
-    {
-        return;
-        
-        // var mat = _meshRenderer.material;
-        lock (_renderLock)
-        {
-            // if (SimpleShader == null)
-            //     throw new NullReferenceException();
-            //THIS IS A COPY?! GD IT UNITY! UPDATE YOUR FING DOCSTRINGS!
-            var mats = new Material[_primitive.Self.Textures.FaceTextures.Length];
-            for (var i = 0; i < mats.Length; i++)
-            {
-                mats[i] = new Material(Shader);
-            }
-
-            _meshRenderer.materials = mats;
-        }
-    }
+    // private void PrimitiveOnInitialized(object sender, EventArgs e)
+    // {
+    //     // return;
+    //     
+    //     // var mat = _meshRenderer.material;
+    //     lock (_renderLock)
+    //     {
+    //         // if (SimpleShader == null)
+    //         //     throw new NullReferenceException();
+    //         //THIS IS A COPY?! GD IT UNITY! UPDATE YOUR FING DOCSTRINGS!
+    //         var mats = new Material[_primitive.Self.Textures.FaceTextures.Length];
+    //         for (var i = 0; i < mats.Length; i++)
+    //         {
+    //             mats[i] = new Material(Shader);
+    //         }
+    //
+    //         _meshRenderer.materials = mats;
+    //     }
+    // }
 
     private void PrimitiveOnUnityTexturesUpdated(object sender, UnityTexturesUpdatedArgs e)
     {
@@ -75,11 +75,14 @@ public class SLPrimitiveRenderer : SLBehaviour
         // var newMaterial = materials[e.TextureIndex] = new Material(original);
         lock (_renderLock)
         {
-            Debug.Log("!\t"+_meshRenderer.materials[e.TextureIndex].shader.name);
-            // _meshRenderer.materials[e.TextureIndex].SetTexture(BaseMap, e.NewTexture);
+            // Debug.Log("!\t"+_meshRenderer.materials[e.TextureIndex].shader.name);
+            //DEBUG
+            _meshRenderer.materials[e.TextureIndex].SetTexture(BaseMap, e.NewTexture);
+            Debug.Log(gameObject.name);
+            // Debug.Break();
         }
 
-        Debug.Log($"DEBUG MAT: Updated!\t{this.transform.name}");
+        // Debug.Log($"DEBUG MAT: Updated!\t{this.transform.name}");
         // Debug.Break();
     }
 
@@ -88,8 +91,12 @@ public class SLPrimitiveRenderer : SLBehaviour
         lock (_renderLock)
         {
             _meshFilter.mesh = e.NewMesh;
+            var mats= new Material[e.NewMesh.subMeshCount];
+            for (var _ = 0; _ < mats.Length; _++)
+                mats[_] = new Material(Shader);
+            _meshRenderer.materials = mats; //In addition to returning a copy/ seems to copy when assigning
         }
 
-        Debug.Log("DEBUG MESH: Updated!");
+        // Debug.Log("DEBUG MESH: Updated!");
     }
 }

@@ -233,6 +233,7 @@ GameObject:
   - component: {fileID: 2011120647}
   - component: {fileID: 2011120648}
   - component: {fileID: 2011120649}
+  - component: {fileID: 2011120650}
   m_Layer: 0
   m_Name: SL Manager
   m_TagString: Untagged
@@ -356,3 +357,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7910f56717774f7a82833f9ff8e4b968, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &2011120650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011120640}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af904a05a8674eac8781299fd2b2ed91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _avatarPrefab: {fileID: 3704146786903875373, guid: 6e8020920aa5d2f49b5c5d263690ef94, type: 3}
+  _container: {fileID: 0}
+  _localAvatar: {fileID: 0}

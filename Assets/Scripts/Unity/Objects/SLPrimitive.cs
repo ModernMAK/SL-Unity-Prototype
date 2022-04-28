@@ -1,21 +1,48 @@
 using System;
 using System.Collections.Generic;
+using Attributes;
 using OpenMetaverse;
 using OpenMetaverse.Rendering;
+using UnityEngine;
 using Texture = UnityEngine.Texture;
 using Mesh = UnityEngine.Mesh;
 
 public class SLPrimitive : SLBehaviour
 {
     private static readonly IRendering MeshGen = new MeshmerizerR();
+
+    [SerializeField] [ReadOnly] private int _requestedTextures; //
+    
+    [SerializeField][ReadOnly]
+    private Mesh _mesh;
+    [SerializeField] [ReadOnly] private Texture[] _textures;
+    [SerializeField] [ReadOnly] private Texture _defaultTexture;
+    [SerializeField] [ReadOnly] private bool _awoken = false;
     public Primitive Self { get; private set; }
-    public Mesh UnityMesh { get; private set; }
-    public Texture[] UnityTextures { get; private set; }
+    public Mesh UnityMesh
+    {
+        get => _mesh;
+        private set => _mesh = value;
+    }
+    public Texture[] UnityTextures {
+        get => _textures;
+        private set => _textures = value;
+        
+    }
+    public Texture UnityDefaultTexture {
+        get => _defaultTexture;
+        private set => _defaultTexture = value;
+        
+    }
 
     public event EventHandler Initialized;
 
     protected virtual void Awake()
     {
+        _requestedTextures = 0;
+        _textures = null;
+        _defaultTexture = null;
+        _awoken = true;
         Initialized += StartRequests;
     }
 
@@ -28,6 +55,8 @@ public class SLPrimitive : SLBehaviour
 
     public void Initialize(Primitive self)
     {
+        if (!_awoken)
+            throw new Exception("Initialize occured before gameobject initialization finished!");
         if (Self != null)
             throw new ArgumentException("Primitive Object has already been initialized!", nameof(self));
         Self = self;
@@ -36,38 +65,56 @@ public class SLPrimitive : SLBehaviour
 
     public void RequestMesh()
     {
+        void MeshGenerated(Mesh obj)
+        {
+            obj.name = Self.Type switch
+            {
+                //FOR debug purposes
+                PrimType.Mesh => $"Mesh `{Self.Sculpt.SculptTexture}`", // Doubles as mesh asset for Mesh
+                PrimType.Sculpt => $"Sculpt `{Self.Sculpt.GetHashCode()}`",
+                PrimType.Unknown => $"Unknown Prim type ~ How was this generated!?",
+                _ => $"Generated `{Self.Type}` `{Self.PrimData.GetHashCode()}`"
+            };
+            UnityMesh = obj;
+            OnUnityMeshUpdated(new UnityMeshUpdatedArgs(obj));
+        }
+
         if(UnityMesh == null)
             SLManager.Instance.MeshManager.RequestMesh(Self,MeshGenerated);
     }
 
     private void RequestTextures()
     {
+        void TextureFetched(Texture texture, int index)
+        {
+            texture.name = $"Texture `{Self.Textures.FaceTextures[index].TextureID}`";
+            UnityTextures[index] = texture;
+            OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(index, texture));
+        }
+        void DefaultTextureFetched(Texture texture)
+        {
+            texture.name = $"Texture `{Self.Textures.DefaultTexture.TextureID}`";
+            UnityDefaultTexture = texture;
+            //TODO
+            // OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(null, texture));
+        }
+        
         var fTexts = Self.Textures.FaceTextures;
         UnityTextures = new Texture[fTexts.Length];
+        
+        var defTex = Self.Textures.DefaultTexture;
+        Manager.TextureManager.RequestTexture(defTex.TextureID,DefaultTextureFetched);
         for(var i = 0; i < UnityTextures.Length; i++)
         {
-            var textureInfo = (fTexts[i] ?? Self.Textures.DefaultTexture).TextureID;
-            Manager.TextureManager.RequestTexture(textureInfo,TextureFetched(i));
+            var faceTex = fTexts[i];
+            if (faceTex == null)
+                continue;
+            _requestedTextures++;
+            var texIndex = i;// Required to use i in Callback; i will change but the copy 'texIndex' will not
+            Manager.TextureManager.RequestTexture(faceTex.TextureID,(tex)=>TextureFetched(tex,texIndex));
         }
     }
-
-    private Action<Texture> TextureFetched(int i)
-    {
-        void Internal(Texture texture)
-        {
-            UnityTextures[i] = texture;
-            OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(i, texture));
-        }
-
-        return Internal;
-    }
-
-
-    private void MeshGenerated(Mesh obj)
-    {
-        UnityMesh = obj;
-        OnUnityMeshUpdated(new UnityMeshUpdatedArgs(obj));
-    }
+    
 
 
 

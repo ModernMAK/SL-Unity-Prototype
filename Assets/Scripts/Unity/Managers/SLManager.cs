@@ -18,7 +18,7 @@ public class SLManager : MonoBehaviour
 {
     public SLClient Client { get; private set; }
     public SLTextureManager TextureManager { get; private set; }
-    public SLObjectManager ObjectManager { get; private set; }
+    public SLPrimitiveManager PrimitiveManager { get; private set; }
     public SLMeshManager MeshManager { get; private set; }
 
     public static SLManager Instance { get; private set; }
@@ -55,7 +55,7 @@ public class SLManager : MonoBehaviour
         Instance = this;
         Client = GetComponent<SLClient>();
         TextureManager = GetComponent<SLTextureManager>();
-        ObjectManager = GetComponent<SLObjectManager>();
+        PrimitiveManager = GetComponent<SLPrimitiveManager>();
         MeshManager = GetComponent<SLMeshManager>();
         Threading = GetComponent<SLThreadManager>();
     }
