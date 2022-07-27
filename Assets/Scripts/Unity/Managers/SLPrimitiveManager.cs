@@ -135,6 +135,9 @@ public class SLPrimitiveManager : SLBehaviour
         void Wrapper() => ParentifyPrim(prim);
         return Wrapper;
     }
+    
+    
+    
     private void ParentifyPrim(Primitive prim)
     {
         //We need to lock _lookup across Paerntify (to make sure parent isn't added between TryGetValues
@@ -144,24 +147,40 @@ public class SLPrimitiveManager : SLBehaviour
         {
             if (unsynched.TryGetValue(prim.ID, out var SLPrim))
             {
+                if (prim.ParentID == NullParentID)
+                {
+                    SetParent(SLPrim.gameObject, _parentedContainer, prim);
+                    SLPrim.gameObject.SetActive(true);
+                }
                 //TODO make sure this is locked?
                 //  Internal Dict -> It's Libre's ThreadDict; should be locked
-                if(Manager.Client.Network.CurrentSim.ObjectsPrimitives.TryGetValue(prim.ParentID, out var parent))
+                else if(Manager.Client.Network.CurrentSim.ObjectsPrimitives.TryGetValue(prim.ParentID, out var parent))
                 {
+                    //Parent primitive exists
                     if (unsynched.TryGetValue(parent.ID, out var parentSLPrim))
                     {
+                        //SL Primitive exists
                         SetParent(SLPrim.gameObject, parentSLPrim.gameObject, prim);
                         SLPrim.gameObject.SetActive(true);
                     }
+                    else if(_promises.Contains(parent.ID))
+                    {
+                        Debug.LogWarning("Waiting for parent prim to be constructed...");
+                        Manager.Threading.Unity.Global.Enqueue(ParentifyPrimAction(prim));
+                    }
                     else
                     {
-                        Debug.LogWarning("Parent wasn't created?");
+                        //SL Primitive does not exist
+                        Debug.LogWarning($"Parent `{parent.ID}` wasn't created?");
+                        _promises.Add(parent.ID);
+                        Manager.Threading.Unity.Global.Enqueue(()=>CreatePrim(parent));
                         Manager.Threading.Unity.Global.Enqueue(ParentifyPrimAction(prim));
                     }
                 }
                 else
                 {
-                    Debug.LogWarning("Prim Parent doesn't exist yet?");
+                    Debug.LogWarning($"Parent `{prim.ParentID}` doesn't exist yet?");
+                    Manager.Client.Objects.RequestObject(Manager.Client.Network.CurrentSim, prim.ParentID);
                     Manager.Threading.Unity.Global.Enqueue(ParentifyPrimAction(prim));
                 }
             }
@@ -185,8 +204,8 @@ public class SLPrimitiveManager : SLBehaviour
     {
         if (prim == null)
             throw new NullReferenceException("Cannot create a null primitive!");
-        var go = Instantiate(_primtivePrefab);
-            // CommonConversion.CoordToUnity(prim.Position), 
+        var go = Instantiate(_primtivePrefab, _unparentedContainer.transform, true);
+        // CommonConversion.CoordToUnity(prim.Position), 
             // CommonConversion.RotToUnity(prim.Rotation), 
             // _parentedContainer.transform);
             
@@ -221,13 +240,16 @@ public class SLPrimitiveManager : SLBehaviour
     {
         var t = go.GetComponent<SLTransform>();
         var p = parent.GetComponent<SLTransform>();
-        t.SetParent(p);
-        t.UpdateFromPrim(prim);
+        if (p == null)
+            t.SetParent(parent.transform);
+        else
+            t.SetParent(p);
+        
         // go.transform.parent = null;
-        // go.transform.localScale = CommonConversion.CoordToUnity(prim.Scale); 
+        t.Scale = CommonConversion.CoordToUnity(prim.Scale); 
         // go.transform.SetParent(parent.transform,true);
-        // go.transform.localPosition = CommonConversion.CoordToUnity(prim.Position);
-        // go.transform.localRotation = CommonConversion.RotToUnity(prim.Rotation);
+        t.LocalPosition = CommonConversion.CoordToUnity(prim.Position);
+        t.LocalRotation = CommonConversion.RotToUnity(prim.Rotation);
     }
 
     protected virtual void OnObjectCreated(ObjectCreatedArgs e)
