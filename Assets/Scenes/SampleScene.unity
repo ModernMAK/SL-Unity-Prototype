@@ -234,6 +234,7 @@ GameObject:
   - component: {fileID: 2011120648}
   - component: {fileID: 2011120649}
   - component: {fileID: 2011120650}
+  - component: {fileID: 2011120651}
   m_Layer: 0
   m_Name: SL Manager
   m_TagString: Untagged
@@ -253,6 +254,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dece579e988495e866b0243ca685855, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  LogLevels: 21
 --- !u!114 &2011120642
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -279,6 +281,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _primtivePrefab: {fileID: 8687593827432546213, guid: b4f58469a3e642d409c60599321d4bdf, type: 3}
   _container: {fileID: 0}
+  _unparentedContainer: {fileID: 0}
+  _parentedContainer: {fileID: 0}
 --- !u!114 &2011120644
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -372,3 +376,17 @@ MonoBehaviour:
   _avatarPrefab: {fileID: 3704146786903875373, guid: 6e8020920aa5d2f49b5c5d263690ef94, type: 3}
   _container: {fileID: 0}
   _localAvatar: {fileID: 0}
+--- !u!114 &2011120651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011120640}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48c6492dceb6be544a252a8237b479a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _mesh: {fileID: 0}
+  _container: {fileID: 0}

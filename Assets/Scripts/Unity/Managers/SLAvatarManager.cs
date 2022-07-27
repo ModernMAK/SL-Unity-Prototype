@@ -91,15 +91,20 @@ public class SLAvatarManager : SLBehaviour
     }
 
 
-    public InternalDictionary<uint, Avatar> Avatars => Client.Network.CurrentSim.ObjectsAvatars;
+    public InternalDictionary<uint, Avatar> Avatars => Manager.Client.Network.CurrentSim.ObjectsAvatars;
 
     private SLAvatar CreateAvatarObject(Avatar avatar)
     {
         if (avatar == null)
             throw new NullReferenceException("Cannot create a null Avatar!");
-        var go = Instantiate(_avatarPrefab, avatar.Position.ToUnity(), avatar.Rotation.ToUnity(), _container.transform);
+        var go = Instantiate(
+            _avatarPrefab, 
+            CommonConversion.CoordToUnity(avatar.Position), 
+            CommonConversion.RotToUnity(avatar.Rotation), 
+            _container.transform
+        );
         go.name = $"Avatar `{avatar.Name}`";
-        go.transform.localScale = avatar.Scale.ToUnity();
+        go.transform.localScale = CommonConversion.CoordToUnity(avatar.Scale);
         //TODO move to SLAvatar
         //Parenting should belong to Avatar and be done in initialize (this would also allow us to hide our instantiated object until all
         //  Actions are done

@@ -1,10 +1,11 @@
 using System;
 using UnityEngine;
 
-[RequireComponent(typeof(SLPrimitive))]
+// [RequireComponent(typeof(SLPrimitive))]
 [RequireComponent(typeof(MeshFilter))]
 public class SLPrimitiveRenderer : SLBehaviour
 {
+    [SerializeField]
     private SLPrimitive _primitive;
     private MeshFilter _meshFilter;
     private MeshRenderer _meshRenderer;
@@ -30,7 +31,9 @@ public class SLPrimitiveRenderer : SLBehaviour
     private void Awake()
     {
         _renderLock = new object();
-        _primitive = GetComponent<SLPrimitive>();
+        if (_primitive == null)
+            _primitive = GetComponent<SLPrimitive>();
+        
         _meshFilter = GetComponent<MeshFilter>();
         _meshRenderer = GetComponent<MeshRenderer>();
         _primitive.UnityMeshUpdated += PrimitiveOnUnityMeshUpdated;

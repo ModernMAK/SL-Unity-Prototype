@@ -7,6 +7,7 @@ using UnityEngine;
 using Texture = UnityEngine.Texture;
 using Mesh = UnityEngine.Mesh;
 
+[RequireComponent(typeof(SLTransform))]
 public class SLPrimitive : SLBehaviour
 {
     private static readonly IRendering MeshGen = new MeshmerizerR();
@@ -19,6 +20,7 @@ public class SLPrimitive : SLBehaviour
     [SerializeField] [ReadOnly] private Texture _defaultTexture;
     [SerializeField] [ReadOnly] private bool _awoken = false;
     public Primitive Self { get; private set; }
+    public SLTransform Transform { get; private set; }
     public Mesh UnityMesh
     {
         get => _mesh;
@@ -39,6 +41,7 @@ public class SLPrimitive : SLBehaviour
 
     protected virtual void Awake()
     {
+        Transform = GetComponent<SLTransform>();
         _requestedTextures = 0;
         _textures = null;
         _defaultTexture = null;
@@ -54,11 +57,12 @@ public class SLPrimitive : SLBehaviour
 
 
     public void Initialize(Primitive self)
-    {
+    {   
         if (!_awoken)
             throw new Exception("Initialize occured before gameobject initialization finished!");
         if (Self != null)
             throw new ArgumentException("Primitive Object has already been initialized!", nameof(self));
+        gameObject.name = $"Primitive `{self.ID}`";
         Self = self;
         OnInitialized();
     }

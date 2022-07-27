@@ -320,13 +320,7 @@ public class SLMeshManager : SLBehaviour
         Manager.Threading.Data.Global.Enqueue(Internal);
 
     }
-    [Obsolete]
-    private void CreateMesh(Primitive primitive, FacetedMesh slMesh)
-    {
-        var uMesh = slMesh.ToUnity();
-        _cache[primitive] = uMesh;
-        OnUnityMeshUpdated(new PrimMeshCreatedArgs(primitive, uMesh));
-    }
+
     private void CreateMesh(Primitive primitive, UMeshData uMesh)
     {
         Debug.Log("Creating Mesh From UMeshData");

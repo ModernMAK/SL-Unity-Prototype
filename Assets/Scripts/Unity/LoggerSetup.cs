@@ -4,7 +4,18 @@ using UnityEngine;
 
 public class LoggerSetup : MonoBehaviour
 {
+    [Flags]
+    public enum LogLevelFlags
+    {
+        Info = 0x1,
+        Debug = 0x2,
+        Warning = 0x4,
+        Error = 0x8
+    }
+
+    public LogLevelFlags LogLevels = (LogLevelFlags)0x15;
     private static bool _setup = false;
+    
     
     void OnEnable()
     {
@@ -25,14 +36,20 @@ public class LoggerSetup : MonoBehaviour
         {
             case Helpers.LogLevel.None:
             case Helpers.LogLevel.Info:
+                if (LogLevels.HasFlag(LogLevelFlags.Info))
+                    Debug.Log(level + "\n" + message);
+                break;
             case Helpers.LogLevel.Debug:
-                Debug.Log( level+ "\n"+message);
+                if (LogLevels.HasFlag(LogLevelFlags.Debug))
+                    Debug.Log( level+ "\n"+message);
                 break;
             case Helpers.LogLevel.Warning:
-                Debug.LogWarning( level+ "\n"+message);
+                if (LogLevels.HasFlag(LogLevelFlags.Warning))
+                    Debug.LogWarning( level+ "\n"+message);
                 break;
             case Helpers.LogLevel.Error:
-                Debug.LogError( level+ "\n"+message);
+                if (LogLevels.HasFlag(LogLevelFlags.Error))
+                    Debug.LogError( level+ "\n"+message);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(level), level, null);

@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using OpenMetaverse;
 using UnityEngine;
+using Vector3 = OpenMetaverse.Vector3;
 
 public class SLPrimitiveManager : SLBehaviour
 {
     //LocalID seems to change, so use UUID
     //Then use Libre's Primtive table to fetchh parent?
-    
+    private const int NullParentID = 0; // See https://wiki.secondlife.com/wiki/ObjectUpdate
     [SerializeField]
     private GameObject _primtivePrefab;
     private ThreadDictionary<UUID, SLPrimitive> _lookup;
@@ -16,6 +17,10 @@ public class SLPrimitiveManager : SLBehaviour
     public event EventHandler<ObjectCreatedArgs> ObjectCreated;
     [SerializeField]
     private GameObject _container;
+    [SerializeField]
+    private GameObject _unparentedContainer;
+    [SerializeField]
+    private GameObject _parentedContainer;
 
     private bool _createCamera;
 
@@ -31,6 +36,29 @@ public class SLPrimitiveManager : SLBehaviour
                 transform =
                 {
                     parent = transform //Default pos/rot should be unit 0 (origin) and identity quaternion (0x,0y,0z,1w) [which is (0x,0y,0z) in conventional euler rotations] 
+                }
+            };
+        }
+        if (_unparentedContainer == null)
+        {
+            _unparentedContainer = new GameObject("Unparented")
+            {
+                isStatic = true,
+                transform =
+                {
+                    parent = _container.transform,
+                    position = UnityEngine.Vector3.one * -1000
+                }
+            };
+        }
+        if (_parentedContainer == null)
+        {
+            _parentedContainer = new GameObject("Parented")
+            {
+                isStatic = true,
+                transform =
+                {
+                    parent = _container.transform,
                 }
             };
         }
@@ -83,8 +111,8 @@ public class SLPrimitiveManager : SLBehaviour
             _createCamera = false;
             var go = new GameObject("Camera");
             go.AddComponent<Camera>();
-            go.transform.position = Client.Self.SimPosition.ToUnity();
-            go.transform.rotation = Client.Self.SimRotation.ToUnity();
+            go.transform.position = CommonConversion.CoordToUnity(Manager.Client.Self.SimPosition);
+            go.transform.rotation = CommonConversion.RotToUnity(Manager.Client.Self.SimRotation);
         }
     }
 
@@ -123,6 +151,7 @@ public class SLPrimitiveManager : SLBehaviour
                     if (unsynched.TryGetValue(parent.ID, out var parentSLPrim))
                     {
                         SetParent(SLPrim.gameObject, parentSLPrim.gameObject, prim);
+                        SLPrim.gameObject.SetActive(true);
                     }
                     else
                     {
@@ -150,19 +179,33 @@ public class SLPrimitiveManager : SLBehaviour
         }
     }
 
-    public InternalDictionary<uint, Primitive> Primitives => Client.Network.CurrentSim.ObjectsPrimitives;
+    public InternalDictionary<uint, Primitive> Primitives => Manager.Client.Network.CurrentSim.ObjectsPrimitives;
 
     private SLPrimitive CreatePrimitiveObject(Primitive prim)
     {
         if (prim == null)
             throw new NullReferenceException("Cannot create a null primitive!");
-        var go = Instantiate(_primtivePrefab, prim.Position.ToUnity(), prim.Rotation.ToUnity(), _container.transform);
-        go.name = $"Primitive `{prim.ID}`";
-        go.transform.localScale = prim.Scale.ToUnity();
+        var go = Instantiate(_primtivePrefab);
+            // CommonConversion.CoordToUnity(prim.Position), 
+            // CommonConversion.RotToUnity(prim.Rotation), 
+            // _parentedContainer.transform);
+            
+        var slPrimitive = go.GetComponent<SLPrimitive>();
+        slPrimitive.Initialize(prim);
+        
         //TODO move to SLPrimitive
         //Parenting should belong to primitive and be done in initialize (this would also allow us to hide our instantiated object until all
         //  Actions are done
-        Manager.Threading.Unity.Global.Enqueue(ParentifyPrimAction(prim));
+        if (prim.ParentID != NullParentID)
+        {
+            SetParent(go,_unparentedContainer, prim);
+            go.SetActive(false);
+            Manager.Threading.Unity.Global.Enqueue(ParentifyPrimAction(prim));
+        }
+        else
+        {
+            SetParent(go,_parentedContainer, prim);
+        }
         // go.transform.localScale = prim.Scale.ToUnity();
         // if (prim.ParentID != 0)
         // {
@@ -171,17 +214,20 @@ public class SLPrimitiveManager : SLBehaviour
         //     else
         // }
 
-        var slPrimitive = go.GetComponent<SLPrimitive>();
-        slPrimitive.Initialize(prim);
         return slPrimitive;
     }
 
     private void SetParent(GameObject go, GameObject parent, Primitive prim)
     {
-        go.transform.parent = parent.transform;
-        go.transform.localPosition = prim.Position.ToUnity();
-        go.transform.localRotation = prim.Rotation.ToUnity();
-        go.transform.localScale = prim.Scale.ToUnity();
+        var t = go.GetComponent<SLTransform>();
+        var p = parent.GetComponent<SLTransform>();
+        t.SetParent(p);
+        t.UpdateFromPrim(prim);
+        // go.transform.parent = null;
+        // go.transform.localScale = CommonConversion.CoordToUnity(prim.Scale); 
+        // go.transform.SetParent(parent.transform,true);
+        // go.transform.localPosition = CommonConversion.CoordToUnity(prim.Position);
+        // go.transform.localRotation = CommonConversion.RotToUnity(prim.Rotation);
     }
 
     protected virtual void OnObjectCreated(ObjectCreatedArgs e)

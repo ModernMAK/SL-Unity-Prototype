@@ -85,6 +85,7 @@ namespace UnityTemplateProjects.Unity
 
         public static UMeshData FromSL(FacetedMesh slMesh)
         {
+            
             var vertList = new List<Vector3>();
             var normList = new List<Vector3>();
             var uvList = new List<Vector2>();
@@ -97,9 +98,9 @@ namespace UnityTemplateProjects.Unity
                 var vOffset = vertList.Count; // Single buffer
                 foreach (var v in slF.Vertices)
                 {
-                    vertList.Add(v.Position.ToUnity());
-                    normList.Add(v.Normal.ToUnity());
-                    uvList.Add(v.TexCoord.ToUnity());
+                    vertList.Add(CommonConversion.CoordToUnity(v.Position));
+                    normList.Add(CommonConversion.CoordToUnity(v.Normal));
+                    uvList.Add(CommonConversion.UVToUnity(v.TexCoord));
                 }
 
                 foreach (var i in slF.Indices)

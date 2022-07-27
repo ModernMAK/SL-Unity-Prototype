@@ -8,6 +8,7 @@ public class SLLogin : SLBehaviour
     public string first, last, pw;
 
     public bool devLogin = false;
+
     // public bool PrintInventory;
     // private bool loggedIn = false;
     private void Start()

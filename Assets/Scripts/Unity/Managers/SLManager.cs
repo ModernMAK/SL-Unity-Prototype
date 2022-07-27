@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
 
 public static class Assertions
@@ -25,32 +24,8 @@ public class SLManager : MonoBehaviour
 
     public SLThreadManager Threading { get; private set; }
 
-    [Obsolete("Use Thread Manager")]
-    public Thread UnityThread { get; private set; }
-
-    [Obsolete]
-    public void AssertNotUnityThread()
-    {
-        if (UnityThread == null)
-            throw new Exception("Unity Thread was not initialized!!!");
-        var check = UnityThread != Thread.CurrentThread;
-        if (!check)
-            throw new Exception("Currently on Unity Thread!");
-    }
-    [Obsolete]
-
-    public void AssertUnityThread()
-    {
-        if (UnityThread == null)
-            throw new Exception("Unity Thread was not initialized!!!");
-        var check = UnityThread != Thread.CurrentThread;
-        if (check)
-            throw new Exception("Not currently on Unity Thread!");
-    }
     private void Awake()
     {
-        UnityThread = Thread.CurrentThread;//Garunteed to be main thread
-        
         Assertions.AssertSingleton(this,Instance,nameof(SLManager));
         Instance = this;
         Client = GetComponent<SLClient>();
