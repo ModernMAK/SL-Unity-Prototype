@@ -28,6 +28,11 @@ namespace UnityTemplateProjects.Unity
             writer.Write(v.x);
             writer.Write(v.y);
         }
+        public static void WriteByteArray(this BinaryWriter writer, byte[] array)
+        {
+            writer.Write(array.Length);
+            writer.Write(array);
+        }
         public static T[] ReadArray<T>(this BinaryReader reader, Func<T> innerRead)
         {
             var size = reader.ReadInt32();
@@ -35,6 +40,11 @@ namespace UnityTemplateProjects.Unity
             for (var i = 0; i < size; i++)
                 array[i] = innerRead();
             return array;
+        }
+        public static byte[] ReadByteArray(this BinaryReader reader)
+        {
+            var size = reader.ReadInt32();
+            return reader.ReadBytes(size);
         }
 
         public static Vector3 ReadVector3(this BinaryReader reader)

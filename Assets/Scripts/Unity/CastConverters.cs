@@ -12,6 +12,7 @@ using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 // using FreeImageApi;
 using FreeImageAPI;
+using UnityTemplateProjects.Unity;
 using Vector4 = UnityEngine.Vector4;
 
 public static class CoordConverter
@@ -169,6 +170,31 @@ public static class CommonConversion
 }
 public class UTexture
 {
+    public static class Serializer
+    {
+        public static UTexture Read(BinaryReader reader)
+        {
+            var width = reader.ReadInt32();
+            var height = reader.ReadInt32();
+            var pixels = reader.ReadByteArray();
+            return new UTexture(width, height, pixels);
+        }
+        public static void Write(BinaryWriter writer, UTexture texture)
+        {
+            writer.Write(texture.Width);
+            writer.Write(texture.Height);
+            writer.WriteByteArray(texture.Data);
+        }
+
+    }
+
+    public UTexture(int width, int height, byte[] pixels)
+    {
+        Width = width;
+        Height = height;
+        Data = pixels;
+    }
+    
     public int Width { get; private set; }
     public int Height { get; private set; }
     public byte[] Data { get; private set; }
@@ -183,12 +209,8 @@ public class UTexture
             throw new InvalidOperationException("Image failed to convert (JP2->PNG)!");
         var w = FreeImage.GetWidth(bitmap);
         var h = FreeImage.GetHeight(bitmap);
-        return new UTexture()
-        {
-            Width = (int)w,
-            Height = (int)h,
-            Data = outStream.GetBuffer()
-        };
+        return new UTexture((int)w, (int)h, outStream.GetBuffer());
+
     }
 
     public Texture2D ToUnity()

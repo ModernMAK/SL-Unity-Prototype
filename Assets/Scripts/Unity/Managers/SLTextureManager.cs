@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
@@ -7,8 +8,8 @@ using Texture = UnityEngine.Texture;
 
 // public class TextureCache : IDictionary<Primitive,Texture>
 // {
-//     private Dictionary<Primitive.ConstructionData, Texture> _generated;
-//     private Dictionary<UUID, Texture> _assets;
+//     
+//     private ThreadDictionary<UUID, Texture> _assets;
 //
 //     public TextureCache()
 //     {
@@ -180,20 +181,33 @@ public class SLTextureManager : SLBehaviour
     }
     private void DownloadTexture(UUID texture)
     {
-        Manager.Client.Assets.RequestImage(texture, ImageType.Normal,TextureDownloaded);
+        Manager.Client.Assets.RequestImage(texture, ImageType.Normal, GetDownloadCallback(texture,0));
     }
 
-    private void TextureDownloaded(TextureRequestState state, AssetTexture assetTexture)
+    private TextureDownloadCallback GetDownloadCallback(UUID textureId, int tries)
     {
-        if (state == TextureRequestState.Finished)
+        const int MAX_TRIES = 3;
+        void TextureDownloaded(TextureRequestState state, AssetTexture assetTexture)
         {
-            Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID, assetTexture));
-        }
-        else
-        {
-            throw new Exception("Something happened while downloading textures!");
+            switch (state)
+            {
+                case TextureRequestState.Finished:
+                    Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID, assetTexture));
+                    break;
+                case TextureRequestState.NotFound when tries >= MAX_TRIES:
+                    throw new Exception("Texture download not found!");
+                case TextureRequestState.NotFound:
+                    Manager.Client.Assets.RequestImage(textureId, ImageType.Normal, GetDownloadCallback(textureId,tries+1));
+                    break;
+                case TextureRequestState.Timeout when tries >= MAX_TRIES:
+                    throw new Exception("Texture download timed out!");
+                case TextureRequestState.Timeout:
+                    Manager.Client.Assets.RequestImage(textureId, ImageType.Normal, GetDownloadCallback(textureId,tries+1));
+                    break;
+            }
         }
 
+        return TextureDownloaded;
     }
     //
     // private voidTextureDownloaded(Primitive primitive)
@@ -237,6 +251,12 @@ public class SLTextureManager : SLBehaviour
     private void CreateTexture(UUID id, UTexture uTexture)
     {
         var texture = uTexture.ToUnity();
+        Manager.Threading.Unity.Global.Enqueue(() => CompressTexture(id, texture));
+    }
+
+    private void CompressTexture(UUID id, Texture2D texture)
+    {
+        texture.Compress(true);
         OnUnityTextureUpdated(new TextureCreatedArgs(id, texture));
     }
 }

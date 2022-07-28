@@ -320,13 +320,20 @@ public class SLMeshManager : SLBehaviour
         Manager.Threading.Data.Global.Enqueue(Internal);
 
     }
-
     private void CreateMesh(Primitive primitive, UMeshData uMesh)
     {
         Debug.Log("Creating Mesh From UMeshData");
         var m = uMesh.ToUnity();
         m.name = primitive.Type == PrimType.Mesh ? primitive.Sculpt.SculptTexture.ToString() : "Generated";
-        _cache[primitive] = m;
-        OnUnityMeshUpdated(new PrimMeshCreatedArgs(primitive, m));
+        // _cache[primitive] = m;
+        // OnUnityMeshUpdated(new PrimMeshCreatedArgs(primitive, m));
+        Manager.Threading.Unity.Global.Enqueue(() => OptimizeMesh(primitive,m));
+    }
+
+    private void OptimizeMesh(Primitive primitive, Mesh mesh)
+    {
+        mesh.Optimize();
+        _cache[primitive] = mesh;
+        OnUnityMeshUpdated(new PrimMeshCreatedArgs(primitive, mesh));
     }
 }
