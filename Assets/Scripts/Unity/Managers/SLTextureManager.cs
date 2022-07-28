@@ -137,12 +137,12 @@ using Texture = UnityEngine.Texture;
 public class SLTextureManager : SLBehaviour
 {
     private ThreadDictionary<UUID, Texture> _cache;
-    private Dictionary<UUID, Action<Texture>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
+    private ThreadDictionary<UUID, ThreadList<Action<Texture>>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
 
 
     private void Awake()
     {
-        _callbacks = new Dictionary<UUID, Action<Texture>>();
+        _callbacks = new ThreadDictionary<UUID, ThreadList<Action<Texture>>>();
         _cache = new ThreadDictionary<UUID, Texture>();
 
         TextureCreated += TryCallback;
@@ -150,9 +150,10 @@ public class SLTextureManager : SLBehaviour
 
     private void TryCallback(object sender, TextureCreatedArgs e)
     {
-        if (!_callbacks.TryGetValue(e.Id, out var callback)) return;
-        callback(e.Texture);
-        _callbacks.Remove(e.Id);
+        if (!_callbacks.TryGetValue(e.Id, out var callbacks)) return;
+        foreach(var callback in callbacks)
+            callback(e.Texture);
+        _callbacks[e.Id].Clear();
     }
 
     public void RequestTexture(UUID id, Action<Texture> callback)
@@ -161,7 +162,10 @@ public class SLTextureManager : SLBehaviour
             callback(texture);
         else
         {
-            _callbacks[id] = callback;
+            if(_callbacks.TryGetValue(id, out var callbacks))
+                callbacks.Add(callback);
+            else
+                _callbacks[id] = new ThreadList<Action<Texture>>(){callback};
             Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
         }
     }

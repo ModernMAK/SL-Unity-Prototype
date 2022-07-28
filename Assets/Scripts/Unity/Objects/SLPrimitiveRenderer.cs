@@ -72,21 +72,20 @@ public class SLPrimitiveRenderer : SLBehaviour
 
     private void PrimitiveOnUnityTexturesUpdated(object sender, UnityTexturesUpdatedArgs e)
     {
-        //Fix mats
-        // var materials = _meshRenderer.materials;
-        // var original = materials[e.TextureIndex];
-        // var newMaterial = materials[e.TextureIndex] = new Material(original);
         lock (_renderLock)
         {
-            // Debug.Log("!\t"+_meshRenderer.materials[e.TextureIndex].shader.name);
-            //DEBUG
-            _meshRenderer.materials[e.TextureIndex].SetTexture(BaseMap, e.NewTexture);
-            Debug.Log(gameObject.name);
-            // Debug.Break();
+            if (e.TextureIndex == -1)
+            {
+                foreach (var t in _meshRenderer.materials)
+                    if(t.GetTexture(BaseMap) != null)
+                        t.SetTexture(BaseMap, e.NewTexture);
+            }
+            else
+            {
+                _meshRenderer.materials[e.TextureIndex].SetTexture(BaseMap, e.NewTexture);
+            }
         }
 
-        // Debug.Log($"DEBUG MAT: Updated!\t{this.transform.name}");
-        // Debug.Break();
     }
 
     private void PrimitiveOnUnityMeshUpdated(object sender, UnityMeshUpdatedArgs e)
@@ -95,8 +94,12 @@ public class SLPrimitiveRenderer : SLBehaviour
         {
             _meshFilter.mesh = e.NewMesh;
             var mats= new Material[e.NewMesh.subMeshCount];
-            for (var _ = 0; _ < mats.Length; _++)
-                mats[_] = new Material(Shader);
+            for (var i = 0; i < mats.Length; i++)
+            {
+                var m = mats[i] = new Material(Shader);
+                if (_primitive.UnityTextures != null && _primitive.UnityTextures.Length > i)
+                    m.SetTexture(BaseMap, _primitive.UnityTextures[i] ?? _primitive.UnityDefaultTexture);
+            }
             _meshRenderer.materials = mats; //In addition to returning a copy/ seems to copy when assigning
         }
 
