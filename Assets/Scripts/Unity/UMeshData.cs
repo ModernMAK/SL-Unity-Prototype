@@ -11,7 +11,7 @@ namespace UnityTemplateProjects.Unity
 {
     public static class BinaryIOExtensions
     {
-        public static void Write<T>(this BinaryWriter writer, T[] array, Action<T> innerWrite)
+        public static void WriteArray<T>(this BinaryWriter writer, T[] array, Action<T> innerWrite)
         {
             writer.Write(array.Length);
             foreach(var item in array)
@@ -68,24 +68,31 @@ namespace UnityTemplateProjects.Unity
             //To cache assets we'd preferably save the Mesh directly using Unity's ScriptableObjects
             //  But we cant serialize them at runtime.
             //
+            private const ushort VERSION = 1;
             public static UMeshData Read(BinaryReader reader)
             {
+                var version = reader.ReadUInt16();
+                if (version != VERSION)
+                    throw new Exception();
                 var positions = reader.ReadArray(reader.ReadVector3);
                 var normals = reader.ReadArray(reader.ReadVector3);
-                var texcoords = reader.ReadArray(reader.ReadVector2);
+                var texCoords = reader.ReadArray(reader.ReadVector2);
                 var indexes = reader.ReadArray(()=>reader.ReadArray(reader.ReadInt32));
                 return new UMeshData()
                 {
                     Positions = positions,
                     Indexes = indexes,
                     Normals = normals,
-                    TexCoord = texcoords
+                    TexCoord = texCoords
                 };
             }
             public static void Write(BinaryWriter writer, UMeshData data)
             {
-                writer.Write(data.Positions,writer.Write);
-                
+                writer.Write(VERSION);
+                writer.WriteArray(data.Positions,writer.Write);
+                writer.WriteArray(data.Normals,writer.Write);
+                writer.WriteArray(data.TexCoord,writer.Write);
+                writer.WriteArray(data.Indexes,(innerArr)=>writer.WriteArray(innerArr, writer.Write));
             }
         }
         public Vector3[] Positions { get; private set; }
@@ -144,6 +151,18 @@ namespace UnityTemplateProjects.Unity
             return m;
         }
 
-        
+
+        public static UMeshData FromMesh(Mesh mesh)
+        {
+            var data = new UMeshData();
+            data.Positions = mesh.vertices;
+            data.Normals = mesh.normals;
+            data.TexCoord = mesh.uv;
+            var submeshes = mesh.subMeshCount;
+            data.Indexes = new int[submeshes][];
+            for (var submesh = 0; submesh < submeshes; submesh++)
+                data.Indexes[submesh] = mesh.GetTriangles(submesh);
+            return data;
+        }
     }
 }

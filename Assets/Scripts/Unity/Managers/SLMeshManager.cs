@@ -1,18 +1,68 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using OpenMetaverse.Rendering;
 using UnityEngine;
 using UnityTemplateProjects.Unity;
 using Mesh = UnityEngine.Mesh;
+using Path = System.IO.Path;
+
+public class MeshDiskCache : Threadable
+{
+    public const string DefaultCacheLocation = "SLProtoCache/Mesh";
+    private string _cacheLocation;
+    private Func<UUID, string> _pathFunc;
+
+    public static string DefaultPathFunc(UUID id) => $"{id}.umesh";
+
+    public MeshDiskCache(string cacheLocation = DefaultCacheLocation, Func<UUID, string> pathFunction = null)
+    {
+        _cacheLocation = cacheLocation;
+        _pathFunc = pathFunction ?? DefaultPathFunc;
+    }
+
+    public void Store(UUID id, UMeshData mesh)
+    {
+        lock (SyncRoot)
+        {
+            var filePath = Path.Combine(_cacheLocation, _pathFunc(id));
+            using (var file = new FileStream(filePath, FileMode.OpenOrCreate))
+            using (var writer = new BinaryWriter(file))
+                UMeshData.Serializer.Write(writer, mesh);
+        }
+    }
+
+    public bool Load(UUID id, out UMeshData mesh)
+    {
+        lock(SyncRoot)
+        {
+            var filePath = Path.Combine(_cacheLocation, _pathFunc(id));
+            try
+            {
+                using (var file = new FileStream(filePath, FileMode.Open))
+                using (var reader = new BinaryReader(file))
+                {
+                    mesh = UMeshData.Serializer.Read(reader);
+                    return true;
+                }
+            }
+            catch (FileNotFoundException fnf)
+            {
+                mesh = default;
+                return false;
+            }
+        }
+    }
+}
 
 public class MeshCache : Threadable, IDictionary<Primitive,Mesh>
 {
     private readonly Dictionary<Primitive.ConstructionData, Mesh> _generated;
-    private readonly Dictionary<UUID, Mesh> _assets;
-    
+    private readonly Dictionary<UUID, Mesh> _assets; //TODO 
 
     public MeshCache()
     {
@@ -159,6 +209,7 @@ public class SLMeshManager : SLBehaviour
     private static readonly IRendering MeshGen = new MeshmerizerR();
     private MeshCache _cache;
     private ThreadDictionary<UUID, Action<Mesh>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
+    private MeshDiskCache _diskCache;
     private ThreadVar<int> _taskCounter;
     private Queue<Tuple<Primitive, Action<Mesh>>> _requestQueue;
 
@@ -168,6 +219,7 @@ public class SLMeshManager : SLBehaviour
         _requestQueue = new Queue<Tuple<Primitive, Action<Mesh>>>();
         _callbacks = new ThreadDictionary<UUID, Action<Mesh>>();
         _cache = new MeshCache();
+        _diskCache = new MeshDiskCache();
         MeshCreated += TryCallback;
     }
 
@@ -227,8 +279,8 @@ public class SLMeshManager : SLBehaviour
 
     public void RequestMesh(Primitive primitive, Action<Mesh> callback)
     {
-        if (_cache.TryGetValue(primitive, out var mesh))
-            callback(mesh);
+        if (_cache.TryGetValue(primitive, out var cacheMesh))
+            callback(cacheMesh);
         else
         {
             QueueRequest(primitive,callback);
@@ -262,9 +314,8 @@ public class SLMeshManager : SLBehaviour
                 break;
             case PrimType.Sculpt:
                 throw new NotSupportedException();
-                break;
             case PrimType.Mesh:
-                DownloadMesh(primitive);
+                TryLoadFromDisk(primitive);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -288,12 +339,25 @@ public class SLMeshManager : SLBehaviour
     {
         MeshCreated?.Invoke(this, e);
     }
-    private void DownloadMesh(Primitive primitive)
+
+    private void TryLoadFromDisk(Primitive primitive)
     {
         if (primitive == null)
-            throw new NullReferenceException("Self has not been initialized.");
+            throw new NullReferenceException("Primitive is null!");
         if (primitive.Type != PrimType.Mesh)
             throw new InvalidOperationException("Non-Mesh Primitives cannot download a mesh!");
+        
+        if (_diskCache.Load(primitive.Sculpt.SculptTexture, out var mesh))
+        {
+            Manager.Threading.Unity.Global.Enqueue(()=>CreateMesh(primitive,mesh));
+        }
+        else
+        {
+            Manager.Threading.Data.Global.Enqueue(() => DownloadMesh(primitive));
+        }
+    }
+    private void DownloadMesh(Primitive primitive)
+    {
         Manager.Client.Assets.RequestMesh(primitive.Sculpt.SculptTexture,MeshDownloaded(primitive));
     }
 
@@ -309,6 +373,7 @@ public class SLMeshManager : SLBehaviour
                 {
                     // Debug.Log("DEBUG MESH: Downloaded!");
                     var uMeshData = UMeshData.FromSL(slMesh);
+                    Manager.Threading.Data.Global.Enqueue(()=>CacheMesh(primitive,uMeshData));
                     Manager.Threading.Unity.Global.Enqueue(()=>CreateMesh(primitive,uMeshData));
                 }
                 else
@@ -332,6 +397,9 @@ public class SLMeshManager : SLBehaviour
 
         return InternalCallback;
     }
+
+    private void CacheMesh(Primitive primitive, UMeshData uMeshData) =>
+        _diskCache.Store(primitive.Sculpt.SculptTexture, uMeshData);
 
     private void GenerateMesh(Primitive primitive)
     {

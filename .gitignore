@@ -116,3 +116,4 @@ openmetaverse_data/cache
 Assets/Secrets/
 !Assets/Secrets/
 !Assets/Secrets.meta
+SLProtoCache/**/*
