@@ -100,7 +100,7 @@ public class SLPrimitive : SLBehaviour
             texture.name = $"Texture `{Self.Textures.DefaultTexture.TextureID}`";
             UnityDefaultTexture = texture;
             //TODO
-            // OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(null, texture));
+            OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(-1, texture));
         }
         
         var fTexts = Self.Textures.FaceTextures;

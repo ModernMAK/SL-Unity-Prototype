@@ -137,12 +137,17 @@ using Texture = UnityEngine.Texture;
 [RequireComponent(typeof(SLPrimitiveManager))]
 public class SLTextureManager : SLBehaviour
 {
+    private const int MAX_REQUESTS = 8;
+    private ThreadVar<int> _requestCount;
+    private ThreadQueue<UUID> _requestQueue;
     private ThreadDictionary<UUID, Texture> _cache;
     private ThreadDictionary<UUID, ThreadList<Action<Texture>>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
 
 
     private void Awake()
     {
+        _requestCount = new ThreadVar<int>();
+        _requestQueue = new ThreadQueue<UUID>();
         _callbacks = new ThreadDictionary<UUID, ThreadList<Action<Texture>>>();
         _cache = new ThreadDictionary<UUID, Texture>();
 
@@ -167,8 +172,24 @@ public class SLTextureManager : SLBehaviour
                 callbacks.Add(callback);
             else
                 _callbacks[id] = new ThreadList<Action<Texture>>(){callback};
-            Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
+
+            if (_requestCount.Synchronized < MAX_REQUESTS)
+            {
+                StartRequest(id);
+            }
+            else
+            {
+                _requestQueue.Enqueue(id);
+            }
+                
         }
+    }
+
+    private void StartRequest(UUID id)
+    {
+        _requestCount.Synchronized += 1;
+        Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
+
     }
     
 
@@ -257,6 +278,12 @@ public class SLTextureManager : SLBehaviour
     private void CompressTexture(UUID id, Texture2D texture)
     {
         texture.Compress(true);
+        _requestCount.Synchronized -= 1;
+        while (_requestQueue.Count > 0 && _requestCount.Synchronized < MAX_REQUESTS)
+        {
+            var item = _requestQueue.Dequeue();
+            StartRequest(item);
+        }
         OnUnityTextureUpdated(new TextureCreatedArgs(id, texture));
     }
 }

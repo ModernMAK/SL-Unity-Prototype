@@ -77,7 +77,7 @@ public class SLPrimitiveRenderer : SLBehaviour
             if (e.TextureIndex == -1)
             {
                 foreach (var t in _meshRenderer.materials)
-                    if(t.GetTexture(BaseMap) != null)
+                    if(t.GetTexture(BaseMap) == null)
                         t.SetTexture(BaseMap, e.NewTexture);
             }
             else

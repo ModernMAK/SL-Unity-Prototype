@@ -21,10 +21,43 @@ public class Threadable : IThreadable
     public object SyncRoot => _syncRoot;
 }
 
-public abstract class ThreadableUnsafe<TBacking> : Threadable
+public interface IThreadableUnsafe<out TBacking> : IThreadable
+{
+    TBacking Unsynchronized { get; }
+}
+
+public abstract class ThreadableUnsafe<TBacking> : Threadable, IThreadableUnsafe<TBacking>
 {
     public abstract TBacking Unsynchronized { get; }
 }
+
+public class ThreadVar<T> : Threadable, IThreadableUnsafe<T>
+{
+    
+    public ThreadVar(T initialValue = default)
+    {
+        Unsynchronized = initialValue;
+    }
+    
+    public T Unsynchronized { get; set; }
+    public T Synchronized{
+        get
+        {
+            lock (SyncRoot)
+            {
+                return Unsynchronized;
+            }
+        }    
+        set
+        {
+            lock (SyncRoot)
+            {
+                Unsynchronized = value;
+            }
+        }    
+    }
+}
+
 public class ThreadDictionary<TKey, TValue> : ThreadableUnsafe<IDictionary<TKey, TValue>>, IDictionary<TKey, TValue>
 {
     private readonly IDictionary<TKey, TValue> _backingDict;

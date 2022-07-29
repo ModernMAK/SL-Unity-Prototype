@@ -1,20 +1,18 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using OpenMetaverse.Rendering;
 using UnityEngine;
-using UnityTemplateProjects;
 using UnityTemplateProjects.Unity;
 using Mesh = UnityEngine.Mesh;
-using Object = System.Object;
 
 public class MeshCache : Threadable, IDictionary<Primitive,Mesh>
 {
     private readonly Dictionary<Primitive.ConstructionData, Mesh> _generated;
     private readonly Dictionary<UUID, Mesh> _assets;
+    
 
     public MeshCache()
     {
@@ -156,14 +154,18 @@ public class MeshCache : Threadable, IDictionary<Primitive,Mesh>
 [RequireComponent(typeof(SLPrimitiveManager))]
 public class SLMeshManager : SLBehaviour
 {
+    private const int MAX_REQUESTS = 8;
     
     private static readonly IRendering MeshGen = new MeshmerizerR();
     private MeshCache _cache;
     private ThreadDictionary<UUID, Action<Mesh>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
-
+    private ThreadVar<int> _taskCounter;
+    private Queue<Tuple<Primitive, Action<Mesh>>> _requestQueue;
 
     private void Awake()
     {
+        _taskCounter = new ThreadVar<int>();
+        _requestQueue = new Queue<Tuple<Primitive, Action<Mesh>>>();
         _callbacks = new ThreadDictionary<UUID, Action<Mesh>>();
         _cache = new MeshCache();
         MeshCreated += TryCallback;
@@ -229,32 +231,55 @@ public class SLMeshManager : SLBehaviour
             callback(mesh);
         else
         {
-            _callbacks[primitive.ID] = callback;
-            switch (primitive.Type)
-            {
-                case PrimType.Unknown:
-                    break;
-                case PrimType.Box:
-                case PrimType.Cylinder:
-                case PrimType.Prism:
-                case PrimType.Sphere:
-                case PrimType.Torus:
-                case PrimType.Tube:
-                case PrimType.Ring:
-                    GenerateMesh(primitive);
-                    break;
-                case PrimType.Sculpt:
-                    throw new NotSupportedException();
-                    break;
-                case PrimType.Mesh:
-                    DownloadMesh(primitive);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            QueueRequest(primitive,callback);
         }
     }
-    
+
+    private void QueueRequest(Primitive primitive, Action<Mesh> callback)
+    {
+        if(_requestQueue.Count < MAX_REQUESTS)
+            StartRequest(primitive,callback);
+        else
+            _requestQueue.Enqueue(new Tuple<Primitive, Action<Mesh>>(primitive,callback));
+    }
+
+    private void StartRequest(Primitive primitive, Action<Mesh> callback)
+    {
+        _taskCounter.Synchronized += 1;
+        _callbacks[primitive.ID] = callback;
+        switch (primitive.Type)
+        {
+            case PrimType.Unknown:
+                break;
+            case PrimType.Box:
+            case PrimType.Cylinder:
+            case PrimType.Prism:
+            case PrimType.Sphere:
+            case PrimType.Torus:
+            case PrimType.Tube:
+            case PrimType.Ring:
+                GenerateMesh(primitive);
+                break;
+            case PrimType.Sculpt:
+                throw new NotSupportedException();
+                break;
+            case PrimType.Mesh:
+                DownloadMesh(primitive);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+
+    private void FinishRequest()
+    {
+        _taskCounter.Synchronized -= 1;
+        while (_taskCounter.Synchronized < MAX_REQUESTS && _requestQueue.Count > 0)
+        {
+            var item = _requestQueue.Dequeue();
+            StartRequest(item.Item1,item.Item2);
+        }
+    }
 
 
     public event EventHandler<PrimMeshCreatedArgs> MeshCreated;
@@ -334,6 +359,7 @@ public class SLMeshManager : SLBehaviour
     {
         mesh.Optimize();
         _cache[primitive] = mesh;
+        FinishRequest();
         OnUnityMeshUpdated(new PrimMeshCreatedArgs(primitive, mesh));
     }
 }

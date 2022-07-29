@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.Assertions;
 
-public class ActionGroup
+
+public class ThreadRunner
 {
     
     /// <summary>
@@ -33,7 +33,7 @@ public class ActionGroup
         } 
     }
     
-    public ActionGroup(Thread thread)
+    public ThreadRunner(Thread thread)
     {
         Thread = thread;
         Local = new Queue<Action>();
@@ -84,15 +84,15 @@ public class ActionGroup
 [RequireComponent(typeof(SLPrimitiveManager))]
 public class SLThreadManager : SLBehaviour
 {
-    public ActionGroup Unity { get; private set; }
-    public ActionGroup Data { get; private set; }
+    public ThreadRunner Unity { get; private set; }
+    public ThreadRunner Data { get; private set; }
 
     private void Awake()
     {
-        Unity = new ActionGroup(Thread.CurrentThread);
+        Unity = new ThreadRunner(Thread.CurrentThread);
         //Unfortunately, creating a thread requires an entry point
         //  BUT, our entrypoint is inside our class, that we want to reference our thread in
-        Data = new ActionGroup(null);
+        Data = new ThreadRunner(null);
         Data.Thread = new Thread(Data.MainLoop);
         Data.Thread.Start();
     }
