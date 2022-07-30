@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using UnityEngine;
@@ -133,7 +135,107 @@ using Texture = UnityEngine.Texture;
 //     public ICollection<Texture> Values => throw new NotImplementedException();
 // }
 
-public class TextureDiskCache : Threadable
+public interface ISerializer<T>
+{
+    void Write(BinaryWriter writer, T value);
+    T Read(BinaryReader reader);
+}
+
+public interface IDiskCache<in TKey, TValue>
+{
+    public void Store(TKey key, TValue value);
+    public bool Load(TKey key, out TValue value);
+
+}
+public class DiskCache<TKey, TValue> : IDiskCache<TKey,TValue>
+{
+    private readonly string _cacheLocation;
+    private readonly Func<TKey, string> _pathFunc;
+    private readonly ISerializer<TValue> _serializer;
+
+    public DiskCache(string cacheLocation, Func<TKey, string> pathFunc, ISerializer<TValue> serializer)
+    {
+        _cacheLocation = cacheLocation;
+        _pathFunc = pathFunc;
+        _serializer = serializer;
+    }
+
+    public virtual void Store(TKey key, TValue value)
+    {
+        var filePath = Path.Combine(_cacheLocation, _pathFunc(key));
+        using (var file = new FileStream(filePath, FileMode.OpenOrCreate))
+        using (var writer = new BinaryWriter(file))
+            _serializer.Write(writer, value);
+    }
+
+    public Task StoreAsync(TKey key, TValue value)
+    {
+        void Wrapper() => Store(key, value);
+        return  new Task(Wrapper);
+    }
+
+
+    public virtual bool Load(TKey key, out TValue value)
+    {
+        var filePath = Path.Combine(_cacheLocation, _pathFunc(key));
+        try
+        {
+            using (var file = new FileStream(filePath, FileMode.Open))
+            using (var reader = new BinaryReader(file))
+            {
+                value = _serializer.Read(reader);
+                return true;
+            }
+        }
+        catch (FileNotFoundException fnf)
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    public Task<Tuple<bool, TValue>> LoadAsync(TKey key)
+    {
+        Tuple<bool, TValue> Wrapper()
+        {
+            var result = Load(key, out var value);
+            return new Tuple<bool,TValue>(result, value);
+
+        }
+
+        return new Task<Tuple<bool, TValue>>(Wrapper);
+    }
+}
+
+public class DiskCacheThreadable<TKey, TValue> : DiskCache<TKey, TValue>, IThreadable
+{
+    public DiskCacheThreadable(string cacheLocation, Func<TKey, string> pathFunc, ISerializer<TValue> serializer) : base(cacheLocation, pathFunc, serializer)
+    {
+        SyncRoot = new object();
+    }
+
+    public object SyncRoot {
+        get; private set;
+    }
+
+    public override bool Load(TKey key, out TValue value)
+    {
+        lock (SyncRoot)
+        {
+            return base.Load(key, out value);
+        }
+    }
+
+    public override void Store(TKey key, TValue value)
+    {
+        lock (SyncRoot)
+        {
+            base.Store(key, value);
+        }
+    }
+}
+
+public class TextureDiskCache : DiskCacheThreadable<UUID,UTexture>
 {
     public const string DefaultCacheLocation = "SLProtoCache/Texture";
     private string _cacheLocation;
@@ -141,43 +243,8 @@ public class TextureDiskCache : Threadable
 
     public static string DefaultPathFunc(UUID id) => $"{id}.utex";
 
-    public TextureDiskCache(string cacheLocation = DefaultCacheLocation, Func<UUID, string> pathFunction = null)
+    public TextureDiskCache() : base(DefaultCacheLocation,DefaultPathFunc,new UTexture.Serializer())
     {
-        _cacheLocation = cacheLocation;
-        _pathFunc = pathFunction ?? DefaultPathFunc;
-    }
-
-    public void Store(UUID id, UTexture tex)
-    {
-        lock (SyncRoot)
-        {
-            var filePath = Path.Combine(_cacheLocation, _pathFunc(id));
-            using (var file = new FileStream(filePath, FileMode.OpenOrCreate))
-            using (var writer = new BinaryWriter(file))
-                UTexture.Serializer.Write(writer, tex);
-        }
-    }
-
-    public bool Load(UUID id, out UTexture tex)
-    {
-        lock(SyncRoot)
-        {
-            var filePath = Path.Combine(_cacheLocation, _pathFunc(id));
-            try
-            {
-                using (var file = new FileStream(filePath, FileMode.Open))
-                using (var reader = new BinaryReader(file))
-                {
-                    tex = UTexture.Serializer.Read(reader);
-                    return true;
-                }
-            }
-            catch (FileNotFoundException fnf)
-            {
-                tex = default;
-                return false;
-            }
-        }
     }
 }
 
@@ -186,9 +253,11 @@ public class SLTextureManager : SLBehaviour
 {
     private const int MAX_REQUESTS = 8;
     private ThreadVar<int> _requestCount;
-    private ThreadQueue<UUID> _requestQueue;
     private ThreadDictionary<UUID, Texture> _cache;
+
+    private ThreadQueue<UUID> _requestQueue;
     private ThreadDictionary<UUID, ThreadList<Action<Texture>>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
+    
     private TextureDiskCache _diskCache;
     
 
@@ -236,14 +305,14 @@ public class SLTextureManager : SLBehaviour
 
     private void StartRequest(UUID id)
     {
-        Manager.Threading.Data.Global.Enqueue(() => TryLoadTexture(id));
+        _requestCount.Synchronized += 1;
+        Manager.Threading.IO.Global.Enqueue(() => TryLoadTexture(id));
 
     }
 
 
     private void TryLoadTexture(UUID id)
     {
-        _requestCount.Synchronized += 1;
         if (!_diskCache.Load(id, out var tex))
         {
             Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
@@ -290,38 +359,7 @@ public class SLTextureManager : SLBehaviour
 
         return TextureDownloaded;
     }
-    //
-    // private voidTextureDownloaded(Primitive primitive)
-    // {
-    //     void InternalCallback(bool success, AssetTexture assetTexture)
-    //     {
-    //         assetTexture.
-    //         if (success)
-    //         {
-    //             if (FacetedTexture.TryDecodeFromAsset(primitive, assetTexture, DetailLevel.Highest, out var slTexture))
-    //             {
-    //                 Debug.Log("DEBUG Texture: Downloaded!");
-    //                 lock (_downloadedQueueLock)
-    //                 {
-    //                     _downloadedQueue.Enqueue(new Tuple<Primitive, FacetedTexture>(primitive, slTexture)); // Have to build our Texture on the main thread
-    //                 }
-    //             }
-    //             else
-    //             {
-    //                 //TODO debug
-    //                 Debug.Log("DEBUG Texture:Linden Texture decoding failed!");
-    //             }
-    //         }
-    //         else
-    //         {
-    //             //TODO debug
-    //             Debug.Log("DEBUG Texture: Texture download failed!");
-    //         }
-    //     }
-    //
-    //     return InternalCallback;
-    // }
-
+    
     private void ConvertTexture(UUID id, AssetTexture slTexture)
     {
         var uTexture = UTexture.FromSL(slTexture);

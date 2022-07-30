@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Attributes;
 using OpenMetaverse;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Avatar = OpenMetaverse.Avatar;
 
 public class SLAvatarManager : SLBehaviour

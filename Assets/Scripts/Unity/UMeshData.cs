@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using OpenMetaverse.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -63,13 +64,13 @@ namespace UnityTemplateProjects.Unity
     }
     public class UMeshData
     {
-        public static class Serializer
+        public  class Serializer : ISerializer<UMeshData>
         {
             //To cache assets we'd preferably save the Mesh directly using Unity's ScriptableObjects
             //  But we cant serialize them at runtime.
             //
             private const ushort VERSION = 1;
-            public static UMeshData Read(BinaryReader reader)
+            public  UMeshData Read(BinaryReader reader)
             {
                 var version = reader.ReadUInt16();
                 if (version != VERSION)
@@ -86,7 +87,7 @@ namespace UnityTemplateProjects.Unity
                     TexCoord = texCoords
                 };
             }
-            public static void Write(BinaryWriter writer, UMeshData data)
+            public  void Write(BinaryWriter writer, UMeshData data)
             {
                 writer.Write(VERSION);
                 writer.WriteArray(data.Positions,writer.Write);
@@ -99,6 +100,15 @@ namespace UnityTemplateProjects.Unity
         public Vector3[] Normals { get; private set; }
         public Vector2[] TexCoord { get; private set; }
         public int[][] Indexes { get; private set; }
+
+        public UMeshData(Vector3[] positions, Vector3[] normals, Vector2[] texCoord, int[][] indexes)
+        {
+            Positions = positions;
+            Normals = normals;
+            TexCoord = texCoord;
+            Indexes = indexes;
+        }
+        private UMeshData() : this(null,null,null,null){}
 
         public static UMeshData FromSL(FacetedMesh slMesh)
         {
@@ -139,9 +149,9 @@ namespace UnityTemplateProjects.Unity
             return result;
         }
 
-        public Mesh ToUnity()
+        public Mesh ToUnity(Mesh mesh = null)
         {
-            var m = new Mesh();
+            var m = (mesh != null) ? mesh : new Mesh();
             m.SetVertices(Positions);
             m.SetNormals(Normals);
             m.SetUVs(0,TexCoord);

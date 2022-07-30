@@ -170,10 +170,10 @@ public static class CommonConversion
 }
 public class UTexture
 {
-    public static class Serializer
+    public class Serializer : ISerializer<UTexture>
     {
         private const ushort VERSION = 1;
-        public static UTexture Read(BinaryReader reader)
+        public UTexture Read(BinaryReader reader)
         {
             var version = reader.ReadUInt16();
             if (version != VERSION)
@@ -183,7 +183,7 @@ public class UTexture
             var pixels = reader.ReadByteArray();
             return new UTexture(width, height, pixels);
         }
-        public static void Write(BinaryWriter writer, UTexture texture)
+        public void Write(BinaryWriter writer, UTexture texture)
         {
             writer.Write(VERSION);
             writer.Write(texture.Width);

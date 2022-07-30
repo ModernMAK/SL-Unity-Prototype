@@ -11,51 +11,13 @@ using UnityTemplateProjects.Unity;
 using Mesh = UnityEngine.Mesh;
 using Path = System.IO.Path;
 
-public class MeshDiskCache : Threadable
+public class MeshDiskCache : DiskCacheThreadable<UUID,UMeshData>
 {
     public const string DefaultCacheLocation = "SLProtoCache/Mesh";
-    private string _cacheLocation;
-    private Func<UUID, string> _pathFunc;
-
     public static string DefaultPathFunc(UUID id) => $"{id}.umesh";
 
-    public MeshDiskCache(string cacheLocation = DefaultCacheLocation, Func<UUID, string> pathFunction = null)
+    public MeshDiskCache() : base(DefaultCacheLocation,DefaultPathFunc,new UMeshData.Serializer())
     {
-        _cacheLocation = cacheLocation;
-        _pathFunc = pathFunction ?? DefaultPathFunc;
-    }
-
-    public void Store(UUID id, UMeshData mesh)
-    {
-        lock (SyncRoot)
-        {
-            var filePath = Path.Combine(_cacheLocation, _pathFunc(id));
-            using (var file = new FileStream(filePath, FileMode.OpenOrCreate))
-            using (var writer = new BinaryWriter(file))
-                UMeshData.Serializer.Write(writer, mesh);
-        }
-    }
-
-    public bool Load(UUID id, out UMeshData mesh)
-    {
-        lock(SyncRoot)
-        {
-            var filePath = Path.Combine(_cacheLocation, _pathFunc(id));
-            try
-            {
-                using (var file = new FileStream(filePath, FileMode.Open))
-                using (var reader = new BinaryReader(file))
-                {
-                    mesh = UMeshData.Serializer.Read(reader);
-                    return true;
-                }
-            }
-            catch (FileNotFoundException fnf)
-            {
-                mesh = default;
-                return false;
-            }
-        }
     }
 }
 
@@ -310,12 +272,13 @@ public class SLMeshManager : SLBehaviour
             case PrimType.Torus:
             case PrimType.Tube:
             case PrimType.Ring:
-                GenerateMesh(primitive);
+                Manager.Threading.Data.Global.Enqueue(() => GenerateMesh(primitive));
                 break;
             case PrimType.Sculpt:
                 throw new NotSupportedException();
             case PrimType.Mesh:
-                TryLoadFromDisk(primitive);
+                Manager.Threading.IO.Global.Enqueue(() => TryLoadFromDisk(primitive));
+
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -349,7 +312,7 @@ public class SLMeshManager : SLBehaviour
         
         if (_diskCache.Load(primitive.Sculpt.SculptTexture, out var mesh))
         {
-            Manager.Threading.Unity.Global.Enqueue(()=>CreateMesh(primitive,mesh));
+            Manager.Threading.Unity.Global.Enqueue(()=> CreateMesh(primitive,mesh));
         }
         else
         {

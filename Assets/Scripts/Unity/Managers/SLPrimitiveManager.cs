@@ -71,13 +71,6 @@ public class SLPrimitiveManager : SLBehaviour
         Manager.Client.Network.LoginProgress += NetworkOnLoginProgress;
     }
 
-    private void NetworkOnLoginProgress(object sender, LoginProgressEventArgs e)
-    {
-        if (e.Status == LoginStatus.Success)
-        {
-            _createCamera = true;
-        }
-    }
 
     private void OnDisable()
     {
@@ -85,6 +78,13 @@ public class SLPrimitiveManager : SLBehaviour
         Manager.Client.Network.LoginProgress -= NetworkOnLoginProgress;
     }
 
+    private void NetworkOnLoginProgress(object sender, LoginProgressEventArgs e)
+    {
+        if (e.Status == LoginStatus.Success)
+        {
+            _createCamera = true;
+        }
+    }
     private void ObjectsOnObjectUpdate(object sender, PrimEventArgs e)
     {
         var prim = e.Prim;
@@ -100,7 +100,8 @@ public class SLPrimitiveManager : SLBehaviour
         //May have a race condition since lookup/promises are synced separately
         else if (!_lookup.ContainsKey(prim.ID) && !_promises.Contains(prim.ID))
         {
-            throw new InvalidOperationException("Primitive Object state is invalid! A primitive is not new but has not been created!");
+            
+            // throw new InvalidOperationException("Primitive Object state is invalid! A primitive is not new but has not been created!");
         }
     }
 
