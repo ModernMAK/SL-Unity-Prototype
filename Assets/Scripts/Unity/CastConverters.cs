@@ -172,8 +172,12 @@ public class UTexture
 {
     public static class Serializer
     {
+        private const ushort VERSION = 1;
         public static UTexture Read(BinaryReader reader)
         {
+            var version = reader.ReadUInt16();
+            if (version != VERSION)
+                throw new Exception();
             var width = reader.ReadInt32();
             var height = reader.ReadInt32();
             var pixels = reader.ReadByteArray();
@@ -181,6 +185,7 @@ public class UTexture
         }
         public static void Write(BinaryWriter writer, UTexture texture)
         {
+            writer.Write(VERSION);
             writer.Write(texture.Width);
             writer.Write(texture.Height);
             writer.WriteByteArray(texture.Data);

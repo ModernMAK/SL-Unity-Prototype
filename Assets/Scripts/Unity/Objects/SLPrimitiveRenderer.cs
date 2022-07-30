@@ -93,7 +93,7 @@ public class SLPrimitiveRenderer : SLBehaviour
         lock (_renderLock)
         {
             _meshFilter.mesh = e.NewMesh;
-            var mats= new Material[e.NewMesh.subMeshCount];
+            var mats = new Material[e.NewMesh.subMeshCount];
             for (var i = 0; i < mats.Length; i++)
             {
                 var m = mats[i] = new Material(Shader);

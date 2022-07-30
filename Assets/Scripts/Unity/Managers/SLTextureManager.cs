@@ -1,6 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.IO;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using UnityEngine;
@@ -134,6 +133,54 @@ using Texture = UnityEngine.Texture;
 //     public ICollection<Texture> Values => throw new NotImplementedException();
 // }
 
+public class TextureDiskCache : Threadable
+{
+    public const string DefaultCacheLocation = "SLProtoCache/Texture";
+    private string _cacheLocation;
+    private Func<UUID, string> _pathFunc;
+
+    public static string DefaultPathFunc(UUID id) => $"{id}.utex";
+
+    public TextureDiskCache(string cacheLocation = DefaultCacheLocation, Func<UUID, string> pathFunction = null)
+    {
+        _cacheLocation = cacheLocation;
+        _pathFunc = pathFunction ?? DefaultPathFunc;
+    }
+
+    public void Store(UUID id, UTexture tex)
+    {
+        lock (SyncRoot)
+        {
+            var filePath = Path.Combine(_cacheLocation, _pathFunc(id));
+            using (var file = new FileStream(filePath, FileMode.OpenOrCreate))
+            using (var writer = new BinaryWriter(file))
+                UTexture.Serializer.Write(writer, tex);
+        }
+    }
+
+    public bool Load(UUID id, out UTexture tex)
+    {
+        lock(SyncRoot)
+        {
+            var filePath = Path.Combine(_cacheLocation, _pathFunc(id));
+            try
+            {
+                using (var file = new FileStream(filePath, FileMode.Open))
+                using (var reader = new BinaryReader(file))
+                {
+                    tex = UTexture.Serializer.Read(reader);
+                    return true;
+                }
+            }
+            catch (FileNotFoundException fnf)
+            {
+                tex = default;
+                return false;
+            }
+        }
+    }
+}
+
 [RequireComponent(typeof(SLPrimitiveManager))]
 public class SLTextureManager : SLBehaviour
 {
@@ -142,10 +189,12 @@ public class SLTextureManager : SLBehaviour
     private ThreadQueue<UUID> _requestQueue;
     private ThreadDictionary<UUID, Texture> _cache;
     private ThreadDictionary<UUID, ThreadList<Action<Texture>>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
-
+    private TextureDiskCache _diskCache;
+    
 
     private void Awake()
     {
+        _diskCache = new TextureDiskCache();
         _requestCount = new ThreadVar<int>();
         _requestQueue = new ThreadQueue<UUID>();
         _callbacks = new ThreadDictionary<UUID, ThreadList<Action<Texture>>>();
@@ -187,12 +236,23 @@ public class SLTextureManager : SLBehaviour
 
     private void StartRequest(UUID id)
     {
-        _requestCount.Synchronized += 1;
-        Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
+        Manager.Threading.Data.Global.Enqueue(() => TryLoadTexture(id));
 
     }
-    
 
+
+    private void TryLoadTexture(UUID id)
+    {
+        _requestCount.Synchronized += 1;
+        if (!_diskCache.Load(id, out var tex))
+        {
+            Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
+        }
+        else
+        {
+            Manager.Threading.Unity.Global.Enqueue(() => CreateTexture(id,tex));
+        }
+    }
 
     public event EventHandler<TextureCreatedArgs> TextureCreated;
 
@@ -266,6 +326,7 @@ public class SLTextureManager : SLBehaviour
     {
         var uTexture = UTexture.FromSL(slTexture);
         Manager.Threading.Unity.Global.Enqueue(() => CreateTexture(id,uTexture));
+        Manager.Threading.Data.Global.Enqueue(()=> _diskCache.Store(id,uTexture));
     
     }
 
