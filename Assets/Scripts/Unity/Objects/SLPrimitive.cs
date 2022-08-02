@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Attributes;
 using OpenMetaverse;
 using OpenMetaverse.Rendering;
+using Unity.Managers;
 using UnityEngine;
 using Texture = UnityEngine.Texture;
 using Mesh = UnityEngine.Mesh;
@@ -16,8 +17,8 @@ public class SLPrimitive : SLBehaviour
     
     [SerializeField][ReadOnly]
     private Mesh _mesh;
-    [SerializeField] [ReadOnly] private Texture[] _textures;
-    [SerializeField] [ReadOnly] private Texture _defaultTexture;
+    [SerializeField] [ReadOnly] private ThreadArray<Texture> _textures;
+    [SerializeField] [ReadOnly] private ThreadVar<Texture> _defaultTexture;
     [SerializeField] [ReadOnly] private bool _awoken = false;
     public Primitive Self { get; private set; }
     public SLTransform Transform { get; private set; }
@@ -26,12 +27,12 @@ public class SLPrimitive : SLBehaviour
         get => _mesh;
         private set => _mesh = value;
     }
-    public Texture[] UnityTextures {
+    public ThreadArray<Texture> UnityTextures {
         get => _textures;
         private set => _textures = value;
         
     }
-    public Texture UnityDefaultTexture {
+    public ThreadVar<Texture> UnityDefaultTexture {
         get => _defaultTexture;
         private set => _defaultTexture = value;
         
@@ -51,6 +52,8 @@ public class SLPrimitive : SLBehaviour
 
     private void StartRequests(object sender, EventArgs e)
     {
+        _textures = new ThreadArray<Texture>(Self.Textures.FaceTextures.Length);
+        _defaultTexture = new ThreadVar<Texture>();
         RequestMesh();
         RequestTextures();
     }
@@ -89,33 +92,32 @@ public class SLPrimitive : SLBehaviour
 
     private void RequestTextures()
     {
-        void TextureFetched(Texture texture, int index)
+        void TextureFetched(Texture texture, int index, UUID id)
         {
-            texture.name = $"Texture `{Self.Textures.FaceTextures[index].TextureID}`";
+            texture.name = $"Texture `{id}`";
             UnityTextures[index] = texture;
             OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(index, texture));
         }
-        void DefaultTextureFetched(Texture texture)
+        void DefaultTextureFetched(Texture texture, UUID id)
         {
-            texture.name = $"Texture `{Self.Textures.DefaultTexture.TextureID}`";
-            UnityDefaultTexture = texture;
+            texture.name = $"Texture `{id}`";
+            UnityDefaultTexture.Synchronized = texture;
             //TODO
             OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(-1, texture));
         }
         
         var fTexts = Self.Textures.FaceTextures;
-        UnityTextures = new Texture[fTexts.Length];
         
         var defTex = Self.Textures.DefaultTexture;
-        Manager.TextureManager.RequestTexture(defTex.TextureID,DefaultTextureFetched);
-        for(var i = 0; i < UnityTextures.Length; i++)
+        Manager.TextureManager.RequestTexture(defTex.TextureID,(tex) => DefaultTextureFetched(tex,defTex.TextureID));
+        for(var i = 0; i < UnityTextures.Count; i++)
         {
             var faceTex = fTexts[i];
             if (faceTex == null)
                 continue;
             _requestedTextures++;
             var texIndex = i;// Required to use i in Callback; i will change but the copy 'texIndex' will not
-            Manager.TextureManager.RequestTexture(faceTex.TextureID,(tex)=>TextureFetched(tex,texIndex));
+            Manager.TextureManager.RequestTexture(faceTex.TextureID,(tex)=>TextureFetched(tex,texIndex,faceTex.TextureID));
         }
     }
     
