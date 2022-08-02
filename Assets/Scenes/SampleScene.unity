@@ -376,9 +376,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e99873231fef4b87bca23b5c961b01b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  first: 
-  last: 
-  pw: 
+  LoginToken: {fileID: 0}
   devLogin: 0
 --- !u!114 &2011120645
 MonoBehaviour:
