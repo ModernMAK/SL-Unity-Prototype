@@ -2,13 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
+using Libre;
+using LibreMetaverse;
 using OpenMetaverse;
 using OpenMetaverse.Packets;
+using OpenMetaverse.Stats;
 using UnityEngine;
+using Type = System.Type;
 
-namespace Libre
+namespace SLUnity.Managers
 {
-    public class TestClient : GridClient
+    public class UnityGridClient : GridClient, IGridClient
     {
         public UUID GroupID = UUID.Zero;
         public Dictionary<UUID, GroupMember> GroupMembers;
@@ -32,7 +36,7 @@ namespace Libre
         /// <summary>
         /// 
         /// </summary>
-        public TestClient(ClientManager manager)
+        public UnityGridClient()
         {
             // ClientManager = manager;
 
@@ -165,7 +169,7 @@ namespace Libre
 
         public void RegisterCommand(Command command)
         {
-            command.Client = this;
+            // command.Client = this;
             if (!Commands.ContainsKey(command.Name.ToLower()))
             {
                 Commands.Add(command.Name.ToLower(), command);
@@ -268,5 +272,43 @@ namespace Libre
             e.Accept = true;
             return;
         }
+
+        NetworkManager IGridClient.Network => Network;
+
+        Settings IGridClient.Settings => Settings;
+
+        ParcelManager IGridClient.Parcels => Parcels;
+
+        AgentManager IGridClient.Self => Self;
+
+        AvatarManager IGridClient.Avatars => Avatars;
+
+        EstateTools IGridClient.Estate => Estate;
+
+        FriendsManager IGridClient.Friends => Friends;
+
+        GridManager IGridClient.Grid => Grid;
+
+        ObjectManager IGridClient.Objects => Objects;
+
+        GroupManager IGridClient.Groups => Groups;
+
+        AssetManager IGridClient.Assets => Assets;
+
+        InventoryAISClient IGridClient.AisClient => AisClient;
+
+        AppearanceManager IGridClient.Appearance => Appearance;
+
+        InventoryManager IGridClient.Inventory => Inventory;
+
+        DirectoryManager IGridClient.Directory => Directory;
+
+        TerrainManager IGridClient.Terrain => Terrain;
+
+        SoundManager IGridClient.Sound => Sound;
+
+        AgentThrottle IGridClient.Throttle => Throttle;
+
+        UtilizationStatistics IGridClient.Stats => Stats;
     }
 }
