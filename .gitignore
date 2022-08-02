@@ -112,8 +112,8 @@ crashlytics-build.properties
 # Open metaverse cache
 openmetaverse_data/cache
 
-# Store Secrets here
-Assets/Secrets/
-!Assets/Secrets/
-!Assets/Secrets.meta
+# Ignore SLProto Unity Cache Assets
 SLProtoCache/**/*
+
+# Store Secrets here
+[Aa]ssets/Secrets/**

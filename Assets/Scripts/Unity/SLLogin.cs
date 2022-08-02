@@ -6,16 +6,20 @@ public class SLLogin : SLBehaviour
     //https://community.secondlife.com/knowledgebase/english/usernames-and-display-names-r79/#Section__1_1
     public const string Resident = "resident";
     //
-    public string first, last, pw;
-
+    // public string first, last, pw;
+    public SLToken LoginToken;
+    
     public bool devLogin = false;
 
+    public string first => LoginToken.FirstName;
+    public string last => LoginToken.LastName;
+    public string pw => LoginToken.Password;
     // public bool PrintInventory;
     // private bool loggedIn = false;
     private void Start()
     {
         var uri = devLogin ? SLClient.DEV_SERVER : SLClient.MAIN_SERVER;
-        Debug.Log($"Logging in as '{first}' '{last}' w/ '{pw}' @ {uri}");
+        Debug.Log($"Logging in as '{first}' '{last}' @ {uri}");
         if (string.IsNullOrWhiteSpace(last))
             Client.UsernameLogin(first,pw,uri);
         else
