@@ -126,7 +126,10 @@ namespace SLUnity.Objects
                 else if (e.TextureIndex < matCount)
                     UpdateTexture(e.TextureIndex);
                 else
-                    throw new IndexOutOfRangeException($"{e.TextureIndex} >= materials[{matCount}]");
+                {
+                    // throw new IndexOutOfRangeException($"{e.TextureIndex} >= materials[{matCount}]");
+                    Debug.LogError($"{e.TextureIndex} >= materials[{matCount}]"); // Avoid exception to avoid breaking other callbacks
+                }
             }
 
         }

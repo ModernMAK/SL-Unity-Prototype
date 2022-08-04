@@ -18,26 +18,21 @@ namespace SLUnity.Managers
 
         public SLControls Controls { get; private set; }
 
-        private IEnumerable<Component> _managers
-        {
-            get
-            {
-                yield return Client;
-                yield return TextureManager;
-                yield return PrimitiveManager;
-                yield return AvatarManager;
-                yield return MeshManager;
-                yield return Threading;
-                yield return Controls;
-            }
-        }
-
         void AssertManagers()
         {
-            if (_managers.Any(m => m == null))
+            void AssertManager(string name, object manager)
             {
-                throw new NullReferenceException()!;
+                if (manager == null)
+                    throw new NullReferenceException(name);
             }
+            //Unfortunately; we lose name information if we iterate over an array helper containing these values; the price of sanity checks
+            AssertManager(nameof(Client),Client);
+            AssertManager(nameof(TextureManager),TextureManager);
+            AssertManager(nameof(PrimitiveManager),PrimitiveManager);
+            AssertManager(nameof(AvatarManager),AvatarManager);
+            AssertManager(nameof(MeshManager),MeshManager);
+            AssertManager(nameof(Threading),Threading);
+            AssertManager(nameof(Controls),Controls);
         }
         private void Awake()
         {
@@ -46,9 +41,11 @@ namespace SLUnity.Managers
             Client = GetComponent<SLClient>();
             TextureManager = GetComponent<SLTextureManager>();
             PrimitiveManager = GetComponent<SLPrimitiveManager>();
+            AvatarManager = GetComponent<SLAvatarManager>();
             MeshManager = GetComponent<SLMeshManager>();
             Threading = GetComponent<SLThreadManager>();
             Controls = GetComponent<SLControls>();
+            
             AssertManagers();
         }
     }
