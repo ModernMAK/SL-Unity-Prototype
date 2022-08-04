@@ -316,6 +316,7 @@ GameObject:
   - component: {fileID: 2011120649}
   - component: {fileID: 2011120650}
   - component: {fileID: 2011120651}
+  - component: {fileID: 2011120652}
   m_Layer: 0
   m_Name: SL Manager
   m_TagString: Untagged
@@ -376,7 +377,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e99873231fef4b87bca23b5c961b01b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  LoginToken: {fileID: 0}
+  LoginToken: {fileID: 11400000, guid: d51ad67ca6779774883797372b83ac9e, type: 2}
   devLogin: 0
 --- !u!114 &2011120645
 MonoBehaviour:
@@ -469,3 +470,49 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _prefab: {fileID: 6621504595146597849, guid: 2d4aa29da36423149aa0f4a8054c2327, type: 3}
+  _water: {fileID: 15308721}
+--- !u!114 &2011120652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011120640}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a657dcf427c4d68468b7bc6a1d9a9498, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _mapping: {fileID: -944628639613478452, guid: 8292acac351f0b1478df5657089f707d, type: 3}
+  _LeftAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+  _RightAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+  _ForwardAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+  _BackwardAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []

@@ -1,8 +1,11 @@
 using System;
 using Attributes;
 using OpenMetaverse;
+using UnityEditor;
 using UnityEngine;
 using Avatar = OpenMetaverse.Avatar;
+using Quaternion = UnityEngine.Quaternion;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Unity.Objects
 {
@@ -22,22 +25,9 @@ namespace Unity.Objects
         [SerializeField] [ReadOnly] private bool _isThisUser;
         public bool LocalUserAvatar { get => _isThisUser; private set => _isThisUser = value; }
         public Avatar Self { get; private set; }
-        // public Mesh UnityMesh
-        // {
-        //     get => _mesh;
-        //     private set => _mesh = value;
-        // }
-        // public Texture[] UnityTextures {
-        //     get => _textures;
-        //     private set => _textures = value;
-        //     
-        // }
-        // public Texture UnityDefaultTexture {
-        //     get => _defaultTexture;
-        //     private set => _defaultTexture = value;
-        //     
-        // }
-        //
+        [SerializeField][ReadOnly] private Vector3 _targetPosition;
+        [SerializeField][ReadOnly] private Quaternion _targetRotation;
+        [SerializeField][ReadOnly] private Vector3 _targetScale;
         public event EventHandler Initialized;
         //
         protected virtual void Awake()
@@ -51,18 +41,9 @@ namespace Unity.Objects
 
         private void DoDebug(object sender, EventArgs e)
         {
-            _sculptTex = Self.Sculpt.SculptTexture.Guid.ToString();
+            _sculptTex = (Self.Sculpt != null ? Self.Sculpt.SculptTexture.Guid.ToString() : Guid.Empty.ToString());
             _pType = Self.Type;
         }
-
-        //
-        // private void StartRequests(object sender, EventArgs e)
-        // {
-        //     RequestMesh();
-        //     RequestTextures();
-        // }
-        //
-        //
         public void Initialize(Avatar self)
         {
             if (!_awoken)
@@ -71,80 +52,46 @@ namespace Unity.Objects
                 throw new ArgumentException("Primitive Object has already been initialized!", nameof(self));
             Self = self;
             LocalUserAvatar = (self.Name == Manager.Client.Self.Name); //HACK
+            StartLerp(transform.position,transform.rotation, transform.localScale);
             OnInitialized();
         }
-        //
-        // public void RequestMesh()
-        // {
-        //     void MeshGenerated(Mesh obj)
-        //     {
-        //         obj.name = Self.Type switch
-        //         {
-        //             //FOR debug purposes
-        //             PrimType.Mesh => $"Mesh `{Self.Sculpt.SculptTexture}`", // Doubles as mesh asset for Mesh
-        //             PrimType.Sculpt => $"Sculpt `{Self.Sculpt.GetHashCode()}`",
-        //             PrimType.Unknown => $"Unknown Prim type ~ How was this generated!?",
-        //             _ => $"Generated `{Self.Type}` `{Self.PrimData.GetHashCode()}`"
-        //         };
-        //         UnityMesh = obj;
-        //         OnUnityMeshUpdated(new UnityMeshUpdatedArgs(obj));
-        //     }
-        //
-        //     if(UnityMesh == null)
-        //         SLManager.Instance.MeshManager.RequestMesh(Self,MeshGenerated);
-        // }
-        //
-        // private void RequestTextures()
-        // {
-        //     void TextureFetched(Texture texture, int index)
-        //     {
-        //         texture.name = $"Texture `{Self.Textures.FaceTextures[index].TextureID}`";
-        //         UnityTextures[index] = texture;
-        //         OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(index, texture));
-        //     }
-        //     void DefaultTextureFetched(Texture texture)
-        //     {
-        //         texture.name = $"Texture `{Self.Textures.DefaultTexture.TextureID}`";
-        //         UnityDefaultTexture = texture;
-        //         //TODO
-        //         // OnUnityTexturesUpdated(new UnityTexturesUpdatedArgs(null, texture));
-        //     }
-        //     
-        //     var fTexts = Self.Textures.FaceTextures;
-        //     UnityTextures = new Texture[fTexts.Length];
-        //     
-        //     var defTex = Self.Textures.DefaultTexture;
-        //     Manager.TextureManager.RequestTexture(defTex.TextureID,DefaultTextureFetched);
-        //     for(var i = 0; i < UnityTextures.Length; i++)
-        //     {
-        //         var faceTex = fTexts[i];
-        //         if (faceTex == null)
-        //             continue;
-        //         _requestedTextures++;
-        //         var texIndex = i;// Required to use i in Callback; i will change but the copy 'texIndex' will not
-        //         Manager.TextureManager.RequestTexture(faceTex.TextureID,(tex)=>TextureFetched(tex,texIndex));
-        //     }
-        // }
-        //
-        //
-        //
-        //
-        // public event EventHandler<UnityMeshUpdatedArgs> UnityMeshUpdated;
-        // public event EventHandler<UnityTexturesUpdatedArgs> UnityTexturesUpdated;
-        //
-        // protected virtual void OnUnityMeshUpdated(UnityMeshUpdatedArgs e)
-        // {
-        //     UnityMeshUpdated?.Invoke(this, e);
-        // }
-        // protected virtual void OnUnityTexturesUpdated(UnityTexturesUpdatedArgs e)
-        // {
-        //     UnityTexturesUpdated?.Invoke(this, e);
-        // }
-        //
-        //
         protected virtual void OnInitialized()
         {
             Initialized?.Invoke(this, EventArgs.Empty);
         }
+
+        public void StartLerp(Vector3 avatarPosition, Quaternion avatarRotation, Vector3 avatarScale)
+        {
+            // _targetPosition = avatarPosition;
+            // _targetRotation = avatarRotation;
+            // _targetScale = avatarScale;
+            transform.position = avatarPosition;
+            transform.rotation = avatarRotation;
+            transform.localScale = avatarScale;
+        }
+        //
+        // private Vector3 Lerp(Vector3 src, Vector3 dest)
+        // {
+        //     const float ERR = 0.01f;
+        //     const float ERR_SQR = ERR * ERR;
+        //     const float TIME = 0.5f;
+        //
+        //     return (src - dest).sqrMagnitude > ERR_SQR ? Vector3.Lerp(src, dest, TIME) : dest;
+        // }
+        // private Quaternion Lerp(Quaternion src, Quaternion dest)
+        // {
+        //     const float ERR = 0.01f;
+        //     const float ERR_SQR = ERR * ERR;
+        //     const float TIME = 0.5f;
+        //
+        //     return (src.eulerAngles - dest.eulerAngles).sqrMagnitude > ERR_SQR ? Quaternion.Lerp(src, dest, TIME) : dest;
+        // }
+        // private void Update()
+        // {
+        //     transform.position = Lerp(transform.position, _targetPosition);
+        //     transform.rotation = Lerp(transform.rotation, _targetRotation);
+        //     transform.localScale = Lerp(transform.localScale, _targetScale);
+        //
+        // }
     }
 }
