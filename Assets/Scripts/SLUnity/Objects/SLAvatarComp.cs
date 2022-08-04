@@ -1,4 +1,4 @@
-using Unity.Objects;
+using SLUnity.Objects;
 using UnityEngine;
 
 [RequireComponent(typeof(SLAvatar))]

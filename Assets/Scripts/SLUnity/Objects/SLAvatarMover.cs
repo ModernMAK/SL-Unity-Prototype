@@ -1,6 +1,7 @@
 using System;
 using Attributes;
 using OpenMetaverse;
+using SLUnity;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Quaternion = UnityEngine.Quaternion;
