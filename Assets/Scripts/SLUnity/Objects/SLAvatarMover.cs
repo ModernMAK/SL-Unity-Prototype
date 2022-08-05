@@ -11,6 +11,9 @@ public class SLAvatarMover : SLAvatarComp
 {
     private AgentManager.AgentMovement Mover;
 
+
+    private const float TurnSpeedMultiplier = 2f;
+    
     [SerializeField][ReadOnly]
     private bool movingForward;
     [SerializeField][ReadOnly]
@@ -79,8 +82,8 @@ public class SLAvatarMover : SLAvatarComp
         //Either cancels out (Left & Right) or no rotation
         if (Mover.TurnLeft == Mover.TurnRight) return;
         
-        var dir = Mover.TurnRight ? 1f : -1f;
-        var q = Quaternion.AngleAxis(dir * deltaTime, SL_UP);
+        var dir = Mover.TurnRight ? -1f : 1f;
+        var q = Quaternion.AngleAxis(dir * deltaTime * Mathf.Rad2Deg * TurnSpeedMultiplier, SL_UP);
         Mover.BodyRotation *= q.CastSL();
         Mover.SendUpdate(true);
 
@@ -89,8 +92,8 @@ public class SLAvatarMover : SLAvatarComp
 
     private void ForwardOnStarted(InputAction.CallbackContext obj) => UpdateZMove(true, true);
     private void ForwardOnCanceled(InputAction.CallbackContext obj) => UpdateZMove(false, true);
-    private void BackwardOnStarted(InputAction.CallbackContext obj) => UpdateZMove(true, true);
-    private void BackwardOnCanceled(InputAction.CallbackContext obj) => UpdateZMove(false, true);
+    private void BackwardOnStarted(InputAction.CallbackContext obj) => UpdateZMove(true, false);
+    private void BackwardOnCanceled(InputAction.CallbackContext obj) => UpdateZMove(false, false);
     private void RightOnStarted(InputAction.CallbackContext obj) => UpdateRotation(true, true);
     private void RightOnCanceled(InputAction.CallbackContext obj) => UpdateRotation(false, true);
     private void LeftOnStarted(InputAction.CallbackContext obj) => UpdateRotation(true, false);

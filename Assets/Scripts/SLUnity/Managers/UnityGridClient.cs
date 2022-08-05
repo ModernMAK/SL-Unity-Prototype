@@ -48,10 +48,13 @@ namespace SLUnity.Managers
             Settings.LOG_LEVEL = Helpers.LogLevel.Debug;
             Settings.LOG_RESENDS = false;
             Settings.STORE_LAND_PATCHES = true;
+            Settings.SEND_AGENT_UPDATES = true;
+            Settings.MULTIPLE_SIMS = false; // WHY IS THIS EXPERIMENTAL FEATURE ON BY DEFAULT?!
             Settings.ALWAYS_DECODE_OBJECTS = true;
             Settings.ALWAYS_REQUEST_OBJECTS = true;
-            Settings.SEND_AGENT_UPDATES = true;
-            Settings.USE_ASSET_CACHE = true;
+            Settings.OBJECT_TRACKING = true;
+            Settings.AVATAR_TRACKING = true;
+            Settings.USE_ASSET_CACHE = false;//Stop using libre cache; we have our own
 
             Network.RegisterCallback(PacketType.AgentDataUpdate, AgentDataUpdateHandler);
             // Network.LoginProgress += LoginHandler;

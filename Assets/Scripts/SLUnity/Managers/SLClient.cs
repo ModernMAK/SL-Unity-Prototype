@@ -1,3 +1,4 @@
+using System;
 using Libre;
 using LibreMetaverse;
 using OpenMetaverse;
@@ -148,6 +149,11 @@ namespace SLUnity.Managers
                 loginParams.URI = account.URI;
 
             Network.BeginLogin(loginParams);
+        }
+
+        private void OnDestroy()
+        {
+            Instance.Network.Logout();
         }
     }
 }

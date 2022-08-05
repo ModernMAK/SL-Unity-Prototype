@@ -106,6 +106,22 @@ namespace SLUnity.Managers
             
                 // throw new InvalidOperationException("Primitive Object state is invalid! A primitive is not new but has not been created!");
             }
+            else if(_lookup.TryGetValue(prim.ID, out var slPrim))
+            {
+                Manager.Threading.Unity.Global.Enqueue(() => UpdatePrim(slPrim, prim));
+            }
+            else
+            {
+                throw new Exception($"No Prim `{e.Prim.ID}`");
+            }
+        }
+
+        private void UpdatePrim(SLPrimitive slPrim, Primitive prim)
+        {
+            var t = slPrim.Transform;
+            t.Scale = CommonConversion.CoordToUnity(prim.Scale); 
+            t.LocalPosition = CommonConversion.CoordToUnity(prim.Position);
+            t.LocalRotation = CommonConversion.RotToUnity(prim.Rotation);
         }
 
         private void FixedUpdate()

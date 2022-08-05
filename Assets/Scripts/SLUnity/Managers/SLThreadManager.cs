@@ -13,6 +13,8 @@ namespace SLUnity.Managers
         public ThreadRunner Data { get; private set; }
         public ThreadRunner IO { get; private set; }
 
+        [Min(-1)]
+        public int UnityActions = -1;
         private IEnumerable<ThreadRunner> Runners
         {
             get
@@ -51,7 +53,10 @@ namespace SLUnity.Managers
         {
         
             Unity.LocalizeActions();
-            Unity.RunLocals();
+            if (UnityActions >= 0)
+                Unity.RunLocals(UnityActions);
+            else
+                Unity.RunLocals(UnityActions);
         }
     }
 }

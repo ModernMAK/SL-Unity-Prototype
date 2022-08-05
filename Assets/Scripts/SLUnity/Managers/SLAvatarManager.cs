@@ -7,6 +7,9 @@ using SLUnity.Objects;
 using SLUnity.Threading;
 using UnityEngine;
 using Avatar = OpenMetaverse.Avatar;
+using Quaternion = OpenMetaverse.Quaternion;
+using Vector2 = OpenMetaverse.Vector2;
+using Vector3 = OpenMetaverse.Vector3;
 
 namespace SLUnity.Managers
 {
@@ -47,7 +50,7 @@ namespace SLUnity.Managers
 
         private void OnEnable()
         {
-            Manager.Client.Objects.AvatarUpdate +=ObjectsOnAvatarUpdate ;
+            Manager.Client.Objects.AvatarUpdate += ObjectsOnAvatarUpdate ;
         }
 
 
@@ -69,11 +72,28 @@ namespace SLUnity.Managers
                 _promises.Add(avatar.ID);
                 Manager.Threading.Unity.Global.Enqueue(() => CreateAvatar(avatar));
             }
-            //May have a race condition since lookup/promises are synced separately
-            else if (!_lookup.ContainsKey(avatar.ID) && !_promises.Contains(avatar.ID))
+            else
             {
-                throw new InvalidOperationException("Avatar Object state is invalid! A Avatar is not new but has not been created!");
+                if(_lookup.TryGetValue(avatar.ID, out var slAvatar))
+                {
+                    Manager.Threading.Unity.Global.Enqueue(()=>UpdateAvatar(slAvatar.gameObject, e.Avatar.Position, e.Avatar.Rotation, e.Avatar.Scale));
+                }
+                else if(!_promises.Contains(avatar.ID))
+                {
+                    Debug.LogError($"Avatar `{e.Avatar.Name}` doesn't exist?");
+                    // throw new Exception($"Avatar `{e.Avatar.Name}` doesn't exist?");
+                }
             }
+            // //May have a race condition since lookup/promises are synced separately
+            // else if (!_lookup.ContainsKey(avatar.ID) && !_promises.Contains(avatar.ID))
+            // {
+            //     throw new InvalidOperationException("Avatar Object state is invalid! A Avatar is not new but has not been created!");
+            // }
+            // else 
+            // else
+            // {
+            //     throw new Exception($"Avatar `{e.Avatar.Name}` doesn't exist?");
+            // }
         }
 
 
@@ -124,6 +144,15 @@ namespace SLUnity.Managers
             var slAvatar = go.GetComponent<SLAvatar>();
             slAvatar.Initialize(avatar);
             return slAvatar;
+        }
+
+        void UpdateAvatar(GameObject go, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            Debug.Log($"Updated `{go.name}`");
+            go.transform.localPosition = CommonConversion.CoordToUnity(position);
+            go.transform.rotation = CommonConversion.RotToUnity(rotation);
+            go.transform.localScale = CommonConversion.CoordToUnity(scale);
+            
         }
 
         // private void SetParent(GameObject go, GameObject parent, Avatar avatar)
