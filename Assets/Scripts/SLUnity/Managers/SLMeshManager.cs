@@ -196,12 +196,40 @@ namespace SLUnity.Managers
             }
             else
             {
-                Manager.Threading.Data.Global.Enqueue(() => DownloadMesh(primitive));
+                Manager.Threading.Unity.Global.Enqueue(()=> DownloadMeshCoroutine(primitive));
+                // Manager.Threading.Data.Global.Enqueue(() => DownloadMesh(primitive));
             }
         }
         private void DownloadMesh(Primitive primitive)
         {
             Manager.Client.Assets.RequestMesh(primitive.Sculpt.SculptTexture,MeshDownloaded(primitive));
+            
+        }
+
+        private void DownloadMeshCoroutine(Primitive primitive)
+        {
+            
+            void GenMesh(AssetMesh assetMesh)
+            {
+                Debug.Log("Decoding Mesh From Downloaded Data");
+                // var meshData = _meshGenerator.GenerateMeshData(assetMesh);
+                if (FacetedMesh.TryDecodeFromAsset(primitive, assetMesh, DetailLevel.Highest, out var slMesh))
+                {
+                    // Debug.Log("DEBUG MESH: Downloaded!");
+                    var meshData = UMeshData.FromSL(slMesh);
+                    Manager.Threading.Data.Global.Enqueue(()=>CacheMesh(primitive,meshData));
+                    Manager.Threading.Unity.Global.Enqueue(()=>CreateMesh(primitive,meshData));
+                }
+                else
+                {
+                    //TODO debug
+                    Debug.Log("DEBUG MESH:Linden Mesh decoding failed!");
+                }
+            }
+
+            void Callback(AssetMesh assetMesh) => Manager.Threading.Data.Global.Enqueue(() => GenMesh(assetMesh));
+            var coroutine = DownloadManager.DownloadMesh(primitive.Sculpt.SculptTexture, Callback);
+            Manager.StartCoroutine(coroutine);
         }
 
         private AssetManager.MeshDownloadCallback MeshDownloaded(Primitive primitive)

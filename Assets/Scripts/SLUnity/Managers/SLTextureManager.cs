@@ -234,7 +234,8 @@ namespace SLUnity.Managers
         {
             if (!_diskCache.Load(id, out var tex))
             {
-                Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
+                // Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
+                Manager.Threading.Unity.Global.Enqueue(() => DownloadTextureCoroutine(id));
             }
             else
             {
@@ -251,6 +252,17 @@ namespace SLUnity.Managers
         private void DownloadTexture(UUID texture)
         {
             Manager.Client.Assets.RequestImage(texture, ImageType.Normal, GetDownloadCallback(texture,0));
+        }
+
+        private void DownloadTextureCoroutine(UUID texture)
+        {
+            void Callback(AssetTexture assetTexture)
+            {
+                Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID, assetTexture));
+            }
+
+            var coroutine = DownloadManager.DownloadTexture(texture, Callback);
+            Manager.StartCoroutine(coroutine);
         }
 
         private TextureDownloadCallback GetDownloadCallback(UUID textureId, int tries)
