@@ -149,7 +149,8 @@ namespace SLUnity.Objects
 
             var color = textureInfo.RGBA.CastUnity();
 
-            var hasAlpha = ((Texture2D)textureUsed).alphaIsTransparency || color.a < 0.999f;
+            //DXT5 supports alpha; DXT1 does not
+            var hasAlpha = ((Texture2D)textureUsed).alphaIsTransparency || color.a < 0.999f || ((Texture2D)textureUsed).format == TextureFormat.DXT5;
             var shader = hasAlpha ? AlphaShader : SimpleShader;
             var mat = materials[i];
             bool reassign = false;

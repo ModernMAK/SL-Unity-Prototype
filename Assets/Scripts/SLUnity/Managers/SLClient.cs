@@ -86,7 +86,6 @@ namespace SLUnity.Managers
             Network.LoginProgress +=
                 delegate(object sender, LoginProgressEventArgs e)
                 {
-                    Debug.Log($"Login {e.Status}: {e.Message}"); //, Helpers.LogLevel.Info, client);
 
                     if (e.Status == LoginStatus.Success)
                     {
@@ -118,12 +117,16 @@ namespace SLUnity.Managers
                         //     query = client.Directory.StartPeopleSearch(client.MasterName, 0);
                         // }
 
-                        Debug.Log($"Logged in {this}"); //, Helpers.LogLevel.Info);
+                        Debug.Log($"Logged in {account.FirstName}"); //, Helpers.LogLevel.Info);
                     }
                     else if (e.Status == LoginStatus.Failed)
                     {
                         Debug.Log($"Failed to login {account.FirstName} {account.LastName}:\n{Network.LoginMessage}"); //, Helpers.LogLevel.Warning);
                    
+                    }
+                    else
+                    {
+                        Debug.Log($"Login {e.Status}: {e.Message}"); //, Helpers.LogLevel.Info, client);
                     }
                 };
 

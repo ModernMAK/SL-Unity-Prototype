@@ -18,11 +18,12 @@ namespace SLUnity.Managers
     {
         private readonly IMeshGenerator _meshGenerator = new MeshGenerator();
         
-        private const int MAX_REQUESTS = 16;
+        // private const int MAX_REQUESTS = 16;
     
         private static readonly IRendering MeshGen = new MeshmerizerR();
         private MeshCache _cache;
         private ThreadDictionary<UUID, Action<Mesh>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
+        private ThreadSet<UUID> _promises;
         private MeshDiskCache _diskCache;
         private ThreadVar<int> _taskCounter;
         private Queue<Tuple<Primitive, Action<Mesh>>> _requestQueue;
@@ -30,6 +31,7 @@ namespace SLUnity.Managers
 
         private void Awake()
         {
+            _promises = new ThreadSet<UUID>();
             _taskCounter = new ThreadVar<int>();
             _requestQueue = new Queue<Tuple<Primitive, Action<Mesh>>>();
             _callbacks = new ThreadDictionary<UUID, Action<Mesh>>();
@@ -48,6 +50,19 @@ namespace SLUnity.Managers
             if (!_callbacks.TryGetValue(e.Owner.ID, out var callback)) return;
             callback(e.GeneratedMesh);
             _callbacks.Remove(e.Owner.ID);
+        }
+
+        [Min(1)]
+        public int MAX_REQUESTS = 1;
+        private void Update()
+        {
+            //One Request Per Frame
+            for (var i = 0; i < MAX_REQUESTS; i++)
+            {
+                if (_requestQueue.Count <= 0) return;
+                var item = _requestQueue.Dequeue();
+                StartRequest(item.Item1,item.Item2);
+            }
         }
 
         // private void FixedUpdate()
@@ -109,14 +124,14 @@ namespace SLUnity.Managers
 
         private void QueueRequest(Primitive primitive, Action<Mesh> callback)
         {
-            if(_requestQueue.Count < MAX_REQUESTS)
-                StartRequest(primitive,callback);
-            else
-                _requestQueue.Enqueue(new Tuple<Primitive, Action<Mesh>>(primitive,callback));
+            // if(_requestQueue.Count < MAX_REQUESTS)
+            //     StartRequest(primitive,callback);
+            // else
+            _requestQueue.Enqueue(new Tuple<Primitive, Action<Mesh>>(primitive,callback));
         }
 
         private void StartRequest(Primitive primitive, Action<Mesh> callback)
-        {
+        {            
             _taskCounter.Synchronized += 1;
             _callbacks[primitive.ID] = callback;
             switch (primitive.Type)
@@ -146,12 +161,12 @@ namespace SLUnity.Managers
 
         private void FinishRequest()
         {
-            _taskCounter.Synchronized -= 1;
-            while (_taskCounter.Synchronized < MAX_REQUESTS && _requestQueue.Count > 0)
-            {
-                var item = _requestQueue.Dequeue();
-                StartRequest(item.Item1,item.Item2);
-            }
+            // _taskCounter.Synchronized -= 1;
+            // while (_taskCounter.Synchronized < MAX_REQUESTS && _requestQueue.Count > 0)
+            // {
+            //     var item = _requestQueue.Dequeue();
+            //     StartRequest(item.Item1,item.Item2);
+            // }
         }
 
 

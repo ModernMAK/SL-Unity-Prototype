@@ -17,16 +17,22 @@ namespace SLUnity
         public string first => LoginToken.FirstName;
         public string last => LoginToken.LastName;
         public string pw => LoginToken.Password;
+
+        
+        private bool _loggedIn = false;
         // public bool PrintInventory;
         // private bool loggedIn = false;
-        private void Start()
+        private void Update()
         {
+            if(_loggedIn) return;
+            _loggedIn = true;
             var uri = devLogin ? SLClient.DEV_SERVER : SLClient.MAIN_SERVER;
             Debug.Log($"Logging in as '{first}' '{last}' @ {uri}");
             if (string.IsNullOrWhiteSpace(last))
                 Client.UsernameLogin(first,pw,uri);
             else
                 Client.Login(first,last,pw,uri);
+            enabled = false;
         }
 //
 //     // private void ObjectsOnObjectPropertiesUpdated(object sender, ObjectPropertiesUpdatedEventArgs e)

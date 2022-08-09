@@ -140,7 +140,7 @@ namespace SLUnity.Managers
 [RequireComponent(typeof(SLPrimitiveManager))]
     public class SLTextureManager : SLBehaviour
     {
-        private const int MAX_REQUESTS = 16;
+        // private const int MAX_REQUESTS = 16;
         private ThreadVar<int> _requestCount;
         private ThreadDictionary<UUID, Texture> _cache;
 
@@ -150,6 +150,19 @@ namespace SLUnity.Managers
         private TextureDiskCache _diskCache;
         private AssetBundleDiskCache<UUID, Texture> _assetCache;
 
+
+        [Min(1)]
+        public int MAX_REQUESTS = 1;
+        private void Update()
+        {
+            //One Request Per Frame
+            for (var i = 0; i < MAX_REQUESTS; i++)
+            {
+                if (_requestQueue.Count <= 0) return;
+                var item = _requestQueue.Dequeue();
+                StartRequest(item);
+            }
+        }
 
         private void Awake()
         {
@@ -186,21 +199,21 @@ namespace SLUnity.Managers
                 else
                     _callbacks[id] = new ThreadList<Action<Texture>>(){callback};
 
-                if (_requestCount.Synchronized < MAX_REQUESTS)
-                {
-                    StartRequest(id);
-                }
-                else
-                {
+                // if (_requestCount.Synchronized < MAX_REQUESTS)
+                // {
+                //     StartRequest(id);
+                // }
+                // else
+                // {
                     _requestQueue.Enqueue(id);
-                }
+                // }
                 
             }
         }
 
         private void StartRequest(UUID id)
         {
-            _requestCount.Synchronized += 1;
+            // _requestCount.Synchronized += 1;
             Manager.Threading.Unity.Global.Enqueue(() => TryLoadAssetBundle(id));
 
         }
@@ -288,12 +301,12 @@ namespace SLUnity.Managers
 
         private void FinalizeTexture(UUID id, Texture texture)
         {
-            _requestCount.Synchronized -= 1;
-            while (_requestQueue.Count > 0 && _requestCount.Synchronized < MAX_REQUESTS)
-            {
-                var item = _requestQueue.Dequeue();
-                StartRequest(item);
-            }
+            // _requestCount.Synchronized -= 1;
+            // while (_requestQueue.Count > 0 && _requestCount.Synchronized < MAX_REQUESTS)
+            // {
+            //     var item = _requestQueue.Dequeue();
+            //     StartRequest(item);
+            // }
             OnUnityTextureUpdated(new TextureCreatedArgs(id, texture));
         }
     }

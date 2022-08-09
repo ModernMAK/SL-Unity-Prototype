@@ -56,7 +56,7 @@ namespace SLUnity.Managers
             if (UnityActions >= 0)
                 Unity.RunLocals(UnityActions);
             else
-                Unity.RunLocals(UnityActions);
+                Unity.RunLocals();
         }
     }
 }
