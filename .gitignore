@@ -93,6 +93,7 @@ openmetaverse_data/cache
 
 # Ignore SLProto Unity Cache Assets
 SLProtoCache/**/*
+SLProtoAssets/**
 
 # Store Secrets here
 [Aa]ssets/Secrets/**
