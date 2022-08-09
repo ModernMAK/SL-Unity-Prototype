@@ -26,6 +26,7 @@ namespace SLUnity.Managers
         private MeshDiskCache _diskCache;
         private ThreadVar<int> _taskCounter;
         private Queue<Tuple<Primitive, Action<Mesh>>> _requestQueue;
+        private AssetBundleDiskCache<UUID, Mesh> _assetCache;
 
         private void Awake()
         {
@@ -33,6 +34,11 @@ namespace SLUnity.Managers
             _requestQueue = new Queue<Tuple<Primitive, Action<Mesh>>>();
             _callbacks = new ThreadDictionary<UUID, Action<Mesh>>();
             _cache = new MeshCache();
+
+            _assetCache = new AssetBundleDiskCache<UUID, Mesh>(
+                "SLProtoAssets/Mesh", 
+                (uuid) => uuid.ToString(),
+                (uuid) => uuid.ToString());
             _diskCache = new MeshDiskCache();
             MeshCreated += TryCallback;
         }
@@ -131,7 +137,7 @@ namespace SLUnity.Managers
                     break;
                     throw new NotSupportedException();
                 case PrimType.Mesh:
-                    Manager.Threading.IO.Global.Enqueue(() => TryLoadFromDisk(primitive));
+                    Manager.Threading.Unity.Global.Enqueue(() => TryLoadAssetBundle(primitive));
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -156,13 +162,19 @@ namespace SLUnity.Managers
             MeshCreated?.Invoke(this, e);
         }
 
+        private void TryLoadAssetBundle(Primitive primitive)
+        {
+            if (!_assetCache.Load(primitive.Sculpt.SculptTexture, out var mesh))
+            {
+                Manager.Threading.IO.Global.Enqueue(() => TryLoadFromDisk(primitive));
+            }
+            else
+            {
+                FinalizeMesh(primitive, mesh);
+            }
+        }
         private void TryLoadFromDisk(Primitive primitive)
         {
-            if (primitive == null)
-                throw new NullReferenceException("Primitive is null!");
-            if (primitive.Type != PrimType.Mesh)
-                throw new InvalidOperationException("Non-Mesh Primitives cannot download a mesh!");
-        
             if (_diskCache.Load(primitive.Sculpt.SculptTexture, out var meshData))
             {
                 Manager.Threading.Unity.Global.Enqueue(()=> CreateMesh(primitive,meshData));
@@ -243,6 +255,11 @@ namespace SLUnity.Managers
         private void OptimizeMesh(Primitive primitive, Mesh mesh)
         {
             mesh.Optimize();
+            FinalizeMesh(primitive, mesh);
+        }
+
+        private void FinalizeMesh(Primitive primitive, Mesh mesh)
+        {
             _cache[primitive] = mesh;
             FinishRequest();
             OnUnityMeshUpdated(new PrimMeshCreatedArgs(primitive, mesh));

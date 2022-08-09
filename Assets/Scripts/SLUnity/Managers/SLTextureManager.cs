@@ -148,7 +148,8 @@ namespace SLUnity.Managers
         private ThreadDictionary<UUID, ThreadList<Action<Texture>>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
     
         private TextureDiskCache _diskCache;
-    
+        private AssetBundleDiskCache<UUID, Texture> _assetCache;
+
 
         private void Awake()
         {
@@ -158,6 +159,11 @@ namespace SLUnity.Managers
             _callbacks = new ThreadDictionary<UUID, ThreadList<Action<Texture>>>();
             _cache = new ThreadDictionary<UUID, Texture>();
 
+            _assetCache = new AssetBundleDiskCache<UUID, Texture>(
+                "SLProtoAssets/Texture", 
+                (uuid) => uuid.ToString(),
+                (uuid) => uuid.ToString()
+            );
             TextureCreated += TryCallback;
         }
 
@@ -195,11 +201,22 @@ namespace SLUnity.Managers
         private void StartRequest(UUID id)
         {
             _requestCount.Synchronized += 1;
-            Manager.Threading.IO.Global.Enqueue(() => TryLoadTexture(id));
+            Manager.Threading.Unity.Global.Enqueue(() => TryLoadAssetBundle(id));
 
         }
 
 
+        private void TryLoadAssetBundle(UUID id)
+        {
+            if (!_assetCache.Load(id, out var texture))
+            {
+                Manager.Threading.IO.Global.Enqueue(() => TryLoadTexture(id));
+            }
+            else
+            {
+                FinalizeTexture(id, texture);
+            }
+        }
         private void TryLoadTexture(UUID id)
         {
             if (!_diskCache.Load(id, out var tex))
@@ -266,6 +283,11 @@ namespace SLUnity.Managers
         private void CompressTexture(UUID id, Texture2D texture)
         {
             texture.Compress(true);
+            FinalizeTexture(id, texture);
+        }
+
+        private void FinalizeTexture(UUID id, Texture texture)
+        {
             _requestCount.Synchronized -= 1;
             while (_requestQueue.Count > 0 && _requestCount.Synchronized < MAX_REQUESTS)
             {
