@@ -34,14 +34,21 @@ namespace SLUnity
         }
 
 
-        public async Task Download(Uri uri, Action<byte[]> callback)
+        public async Task DownloadAsync(Uri uri, Action<byte[]> callback)
         {
             var request = await _client.GetAsync(uri);
             var data = await request.Content.ReadAsByteArrayAsync();
             callback(data);
         }
+
+        public void Download(Uri uri, Action<byte[]> callback)
+        {
+            var request = DownloadAsync(uri, callback);
+            if (request.Status == TaskStatus.Created)
+                request.Start();
+        }
         
-        public IEnumerator DownloadMesh(UUID meshId, Action<AssetMesh> callback)
+        public void DownloadMesh(UUID meshId, Action<AssetMesh> callback)
         {
             void Callback(byte[] meshData)
             {
@@ -49,33 +56,11 @@ namespace SLUnity
                 callback(assetMesh);
             }
             var uri = GetMeshURI(meshId);
-            var request = Download(uri, Callback);
-            request.Start();
+            Download(uri,Callback);
 
-            // var request = UnityWebRequest.Get(uri);
-            // var downloader = new DownloadHandlerBuffer();
-            // request.downloadHandler = downloader;
-            // yield return request.SendWebRequest();
-            // switch (request.result)
-            // {
-            //     case UnityWebRequest.Result.InProgress:
-            //         throw new Exception($"Connection State Invalid:\n\tIn Progress");
-            //     case UnityWebRequest.Result.Success:
-            //         var assetMesh = new AssetMesh(meshId, downloader.data);
-            //         callback(assetMesh);
-            //         yield break;
-            //     case UnityWebRequest.Result.ConnectionError:
-            //         throw new Exception($"Connection Error:\n{request.error}\n");
-            //     case UnityWebRequest.Result.ProtocolError:
-            //         throw new Exception($"Protocol Error:\n{request.error}");
-            //     case UnityWebRequest.Result.DataProcessingError:
-            //         throw new Exception($"Data Processing Error:\n{request.error}");
-            //     default:
-            //         throw new ArgumentOutOfRangeException();
-            // }
         }
         
-        public IEnumerator DownloadTexture(UUID textureId, Action<AssetTexture> callback)
+        public void DownloadTexture(UUID textureId, Action<AssetTexture> callback)
         {
             void Callback(byte[] textureData)
             {
@@ -83,31 +68,8 @@ namespace SLUnity
                 callback(assetTexture);
             }
             var uri = GetTextureURI(textureId);
-            var request = Download(uri, Callback);
-            request.Start();
+            Download(uri,Callback);
             
-            // var uri = GetTextureURI(textureId);
-            // var request = UnityWebRequest.Get(uri);
-            // var downloader = new DownloadHandlerBuffer();
-            // request.downloadHandler = downloader;
-            // yield return request.SendWebRequest();
-            // switch (request.result)
-            // {
-            //     case UnityWebRequest.Result.InProgress:
-            //         throw new Exception($"Connection State Invalid:\n\tIn Progress");
-            //     case UnityWebRequest.Result.Success:
-            //         var assetTexture = new AssetTexture(textureId, downloader.data);
-            //         callback(assetTexture);
-            //         yield break;
-            //     case UnityWebRequest.Result.ConnectionError:
-            //         throw new Exception($"Connection Error:\n{request.error}");
-            //     case UnityWebRequest.Result.ProtocolError:
-            //         throw new Exception($"Protocol Error:\n{request.error}");
-            //     case UnityWebRequest.Result.DataProcessingError:
-            //         throw new Exception($"Data Processing Error:\n{request.error}");
-            //     default:
-            //         throw new ArgumentOutOfRangeException();
-            // }
         }
     }
 }

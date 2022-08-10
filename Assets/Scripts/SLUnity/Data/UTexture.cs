@@ -53,6 +53,8 @@ namespace SLUnity.Data
         // var hasAlpha = assetTexture.Components == 4;
         using var inStream = new MemoryStream(assetTexture.AssetData);
         var bitmap = FreeImage.LoadFromStream(inStream);
+        if (bitmap == null)
+            throw new NullReferenceException("Bitmap is null!");
         var hasAlpha = FreeImage.IsTransparent(bitmap);
         // var rgb = FreeImage.GetChannel(bitmap,FREE_IMAGE_COLOR_CHANNEL.FICC_RGB);
         using var outStream = new MemoryStream();

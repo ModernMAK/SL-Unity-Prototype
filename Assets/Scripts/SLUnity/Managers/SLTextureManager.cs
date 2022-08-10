@@ -151,17 +151,23 @@ namespace SLUnity.Managers
         private AssetBundleDiskCache<UUID, Texture> _assetCache;
 
 
-        [Min(1)]
+        [Min(-1)]
         public int MAX_REQUESTS = 1;
         private void Update()
         {
-            //One Request Per Frame
-            for (var i = 0; i < MAX_REQUESTS; i++)
-            {
-                if (_requestQueue.Count <= 0) return;
-                var item = _requestQueue.Dequeue();
-                StartRequest(item);
-            }
+            if(MAX_REQUESTS >= 0)
+                for (var i = 0; i < MAX_REQUESTS; i++)
+                {
+                    if (_requestQueue.Count <= 0) return;
+                    var item = _requestQueue.Dequeue();
+                    StartRequest(item);
+                }
+            else
+                while (_requestQueue.Count > 0)
+                {
+                    var item = _requestQueue.Dequeue();
+                    StartRequest(item);
+                }
         }
 
         private void Awake()
@@ -235,7 +241,7 @@ namespace SLUnity.Managers
             if (!_diskCache.Load(id, out var tex))
             {
                 // Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
-                Manager.Threading.Unity.Global.Enqueue(() => DownloadTextureCoroutine(id));
+                Manager.Threading.IO.Global.Enqueue(() => DownloadTextureCoroutine(id));
             }
             else
             {
@@ -261,8 +267,10 @@ namespace SLUnity.Managers
                 Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID, assetTexture));
             }
 
-            var coroutine = DownloadManager.DownloadTexture(texture, Callback);
-            Manager.StartCoroutine(coroutine);
+            // var coroutine = DownloadManager(texture, Callback);
+            // Manager.StartCoroutine(coroutine);
+            Manager.Downloader.DownloadTexture(texture, Callback);
+
         }
 
         private TextureDownloadCallback GetDownloadCallback(UUID textureId, int tries)

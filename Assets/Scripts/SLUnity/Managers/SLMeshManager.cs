@@ -52,17 +52,24 @@ namespace SLUnity.Managers
             _callbacks.Remove(e.Owner.ID);
         }
 
-        [Min(1)]
+        [Min(-1)]
         public int MAX_REQUESTS = 1;
         private void Update()
         {
+            if(MAX_REQUESTS >= 0)
             //One Request Per Frame
-            for (var i = 0; i < MAX_REQUESTS; i++)
-            {
-                if (_requestQueue.Count <= 0) return;
-                var item = _requestQueue.Dequeue();
-                StartRequest(item.Item1,item.Item2);
-            }
+                for (var i = 0; i < MAX_REQUESTS; i++)
+                {
+                    if (_requestQueue.Count <= 0) return;
+                    var item = _requestQueue.Dequeue();
+                    StartRequest(item.Item1,item.Item2);
+                }
+            else
+                while (_requestQueue.Count > 0)
+                {
+                    var item = _requestQueue.Dequeue();
+                    StartRequest(item.Item1,item.Item2);
+                }
         }
 
         // private void FixedUpdate()
@@ -196,7 +203,7 @@ namespace SLUnity.Managers
             }
             else
             {
-                Manager.Threading.Unity.Global.Enqueue(()=> DownloadMeshCoroutine(primitive));
+                Manager.Threading.IO.Global.Enqueue(()=> DownloadMeshCoroutine(primitive));
                 // Manager.Threading.Data.Global.Enqueue(() => DownloadMesh(primitive));
             }
         }
@@ -228,8 +235,7 @@ namespace SLUnity.Managers
             }
 
             void Callback(AssetMesh assetMesh) => Manager.Threading.Data.Global.Enqueue(() => GenMesh(assetMesh));
-            var coroutine = DownloadManager.DownloadMesh(primitive.Sculpt.SculptTexture, Callback);
-            Manager.StartCoroutine(coroutine);
+            Manager.Downloader.DownloadMesh(primitive.Sculpt.SculptTexture, Callback);
         }
 
         private AssetManager.MeshDownloadCallback MeshDownloaded(Primitive primitive)

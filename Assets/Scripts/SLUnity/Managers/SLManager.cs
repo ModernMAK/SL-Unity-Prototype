@@ -17,6 +17,8 @@ namespace SLUnity.Managers
         public SLThreadManager Threading { get; private set; }
 
         public SLControls Controls { get; private set; }
+        
+        public DownloadManager Downloader { get; private set; }
 
         void AssertManagers()
         {
@@ -38,6 +40,7 @@ namespace SLUnity.Managers
         {
             Assertions.AssertSingleton(this,Instance,nameof(SLManager));
             Instance = this;
+            Downloader = new DownloadManager();
             Client = GetComponent<SLClient>();
             TextureManager = GetComponent<SLTextureManager>();
             PrimitiveManager = GetComponent<SLPrimitiveManager>();
