@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using SLUnity.Data;
@@ -6,7 +7,7 @@ using SLUnity.Events;
 using SLUnity.Objects;
 using SLUnity.Threading;
 using UnityEngine;
-
+using ImageMagick;
 namespace SLUnity.Managers
 {
     // public class TextureCache : IDictionary<Primitive,Texture>
@@ -291,25 +292,47 @@ namespace SLUnity.Managers
             return TextureDownloaded;
         }
     
+        // private void ConvertTexture(UUID id, AssetTexture slTexture)
+        // {
+        //     var uTexture = UTexture.FromSL(slTexture);
+        //     Manager.Threading.Unity.Global.Enqueue(() => CreateTexture(id,uTexture));
+        //     Manager.Threading.Data.Global.Enqueue(()=> _diskCache.Store(id,uTexture));
+        //
+        // }
+        private UTexture CreateUTex(byte[] jpeg2000)
+        {
+            using (var image = new MagickImage(jpeg2000))
+            {
+                var hasAlpha = image.HasAlpha;
+                var format = hasAlpha ? MagickFormat.Dxt5 : MagickFormat.Dxt1;
+                image.Format = format;
+                var dxt = image.ToByteArray();
+                var w = image.Width;
+                var h = image.Height;
+                return new UTexture(w, h, dxt, hasAlpha);
+            }
+        }
+
         private void ConvertTexture(UUID id, AssetTexture slTexture)
         {
-            var uTexture = UTexture.FromSL(slTexture);
-            Manager.Threading.Unity.Global.Enqueue(() => CreateTexture(id,uTexture));
-            Manager.Threading.Data.Global.Enqueue(()=> _diskCache.Store(id,uTexture));
-    
+            var utex = CreateUTex(slTexture.AssetData);
+            Manager.Threading.Unity.Global.Enqueue(() => CreateTexture(id,utex));
+            Manager.Threading.Data.Global.Enqueue(()=> _diskCache.Store(id,utex));
+
         }
 
         private void CreateTexture(UUID id, UTexture uTexture)
         {
             var texture = uTexture.ToUnity();
-            Manager.Threading.Unity.Global.Enqueue(() => CompressTexture(id, texture));
+            FinalizeTexture(id, texture);
+            // Manager.Threading.Unity.Global.Enqueue(() => CompressTexture(id, texture));
         }
 
-        private void CompressTexture(UUID id, Texture2D texture)
-        {
-            texture.Compress(true);
-            FinalizeTexture(id, texture);
-        }
+        // private void CompressTexture(UUID id, Texture2D texture)
+        // {
+        //     texture.Compress(true);
+        //     FinalizeTexture(id, texture);
+        // }
 
         private void FinalizeTexture(UUID id, Texture texture)
         {

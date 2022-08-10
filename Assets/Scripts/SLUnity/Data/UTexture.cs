@@ -4,6 +4,8 @@ using FreeImageAPI;
 using OpenMetaverse.Assets;
 using SLUnity.Serialization;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.UI;
 
 namespace SLUnity.Data
 {
@@ -12,12 +14,21 @@ namespace SLUnity.Data
 {
     public class Serializer : ISerializer<UTexture>
     {
-        private const ushort VERSION = 2;
+        private const ushort VERSION = 3;
         public UTexture Read(BinaryReader reader)
         {
             var version = reader.ReadUInt16();
-            if (version != VERSION)
-                throw new Exception();
+            switch (version)
+            {
+                case VERSION:
+                    break; //
+                case 2:
+                    throw new Exception("Version not supported: UTexture no longer stores data as a PNG!");
+                default:
+                    throw new Exception("Version not supported!");
+                
+            }
+
             var width = reader.ReadInt32();
             var height = reader.ReadInt32();
             var alpha = reader.ReadBoolean();
@@ -48,6 +59,7 @@ namespace SLUnity.Data
     public bool HasAlpha { get; private set; }
     public byte[] Data { get; private set; }
 
+    [Obsolete]
     public static UTexture FromSL(AssetTexture assetTexture)
     {
         // var hasAlpha = assetTexture.Components == 4;
@@ -64,22 +76,14 @@ namespace SLUnity.Data
 
     }
 
+
     public Texture2D ToUnity()
     {
-        // Dont generate mips ~ Assume Alpha (since LoadImage will set it to RGBA32 anyways)
-        var tex = new Texture2D(Width, Height,TextureFormat.RGBA32,false);
-        if(!tex.LoadImage(Data))
-            throw new InvalidOperationException("Image failed to convert (PNG->Tex2D)!");
-        tex.alphaIsTransparency = HasAlpha;
-        if (HasAlpha) return tex; // Done
-        
-        var srcTex = tex; 
-        // Fix TextureFormat so we can use it to check ALPHA
-        tex = new Texture2D(Width, Height, TextureFormat.RGB24,false);
-        var colors = srcTex.GetPixels32();
-        tex.SetPixels32(colors);
-        return tex; 
+        var format = HasAlpha ? TextureFormat.DXT5 : TextureFormat.DXT1;
+        var tex = new Texture2D(Width, Height, format,false);
+        tex.LoadRawTextureData(Data);
+        return tex;
     }
-
+    
 }
 }
