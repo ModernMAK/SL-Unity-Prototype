@@ -22,5 +22,7 @@ namespace SLUnity
         public static OpenMetaverse.Vector3 CastSL(this Vector3 v) => new OpenMetaverse.Vector3(v.x, v.y, v.z);
         public static OpenMetaverse.Vector4 CastSL(this Vector4 v) => new OpenMetaverse.Vector4(v.x, v.y, v.z, v.w);
         public static OpenMetaverse.Quaternion CastSL(this Quaternion v) => new OpenMetaverse.Quaternion(v.x, v.y, v.z, v.w);
+        public static OpenMetaverse.Color4 CastSL(this Color c) => new OpenMetaverse.Color4(c.r,c.g,c.b,c.a);
+        public static OpenMetaverse.Color4 CastSL(this Color32 c) => ((Color)c).CastSL();
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OpenMetaverse;
 using UnityEngine;
 
 namespace SLUnity.Managers
@@ -20,6 +21,8 @@ namespace SLUnity.Managers
         
         public DownloadManager Downloader { get; private set; }
 
+        public SLTerrainManager Terrain  { get; private set; }
+
         void AssertManagers()
         {
             void AssertManager(string name, object manager)
@@ -35,6 +38,7 @@ namespace SLUnity.Managers
             AssertManager(nameof(MeshManager),MeshManager);
             AssertManager(nameof(Threading),Threading);
             AssertManager(nameof(Controls),Controls);
+            AssertManager(nameof(Terrain),Terrain);
         }
         private void Awake()
         {
@@ -48,7 +52,7 @@ namespace SLUnity.Managers
             MeshManager = GetComponent<SLMeshManager>();
             Threading = GetComponent<SLThreadManager>();
             Controls = GetComponent<SLControls>();
-            
+            Terrain = GetComponent<SLTerrainManager>();
             AssertManagers();
         }
     }

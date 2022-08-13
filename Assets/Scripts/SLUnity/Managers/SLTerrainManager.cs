@@ -24,7 +24,20 @@ namespace SLUnity.Managers
     
         private SLTerrain _terrain;
         [SerializeField] private GameObject _prefab;
-    
+
+        public float[,] GetTerrainHeightmapCopy()
+        {
+            var copy = new float[MAP_MAX + 1, MAP_MAX + 1];
+            lock (_terrainMap.SyncRoot)
+            {
+                var src = _terrainMap.Unsynchronized;
+                for(var x =0; x < MAP_MAX+1;x++)
+                for (var y = 0; y < MAP_MAX + 1; y++)
+                    copy[x, y] = src[x, y]; 
+            }
+            return copy;
+        }
+        
         private void Awake()
         {
             _terrainMesh = new ThreadVar<Mesh>(new Mesh());

@@ -309,6 +309,7 @@ namespace SLUnity.Managers
         // }
         private UTexture CreateUTex(byte[] jpeg2000)
         {
+            
             using (var image = new MagickImage(jpeg2000))
             {
                 var hasAlpha = image.HasAlpha;
@@ -332,15 +333,15 @@ namespace SLUnity.Managers
         private void CreateTexture(UUID id, UTexture uTexture)
         {
             var texture = uTexture.ToUnity();
-            FinalizeTexture(id, texture);
-            // Manager.Threading.Unity.Global.Enqueue(() => CompressTexture(id, texture));
+            // FinalizeTexture(id, texture);
+            Manager.Threading.Unity.Global.Enqueue(() => CompressTexture(id, texture));
         }
 
-        // private void CompressTexture(UUID id, Texture2D texture)
-        // {
-        //     texture.Compress(true);
-        //     FinalizeTexture(id, texture);
-        // }
+        private void CompressTexture(UUID id, Texture2D texture)
+        {
+            texture.Compress(true);
+            FinalizeTexture(id, texture);
+        }
 
         private void FinalizeTexture(UUID id, Texture texture)
         {

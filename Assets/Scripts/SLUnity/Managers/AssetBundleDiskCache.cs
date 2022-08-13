@@ -24,6 +24,29 @@ namespace SLUnity.Managers
         }
 
         private string GetFilePath(TKey key) => Path.Combine(_cacheDir, _cachePath(key));
+
+        public static bool TryOpenFile(string fPath, out byte[] data)
+        {
+            try
+            {
+                using var fstream = File.Open(fPath, FileMode.Open);
+                using var mstream = new MemoryStream();
+                fstream.CopyTo(mstream);
+                data = mstream.GetBuffer();
+                return true;
+            }
+            catch (FileNotFoundException exception)
+            {
+                data = default;
+                return false;
+            }
+        }
+
+        public static TValue LoadAssetFromData(byte[] assetBundleData, string assetPath)
+        {
+            var bundle = AssetBundle.LoadFromMemory(assetBundleData);
+            return bundle.LoadAsset<TValue>(assetPath);
+        }
         
         public bool Load(TKey key, out TValue value)
         {
