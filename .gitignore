@@ -98,3 +98,5 @@ SLProtoAssets/**
 # Store Secrets here
 [Aa]ssets/Secrets/**
 .idea/.idea.SL-Unity-Prototype/.idea/encodings.xml
+Assets/Scenes/Snapshots/*
+Assets/**/*.uscene
