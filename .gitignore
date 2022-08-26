@@ -101,4 +101,6 @@ SLProtoAssets/**
 Assets/Scenes/Snapshots/*
 Assets/**/*.uscene
 Assets/SLRegionScene/**/*.scenegraph
+Assets/SLRegionScene/**/*.scenegraph.meta
 Assets/SLScenes/**/*.scenegraph
+Assets/SLScenes/**/*.scenegraph.meta
