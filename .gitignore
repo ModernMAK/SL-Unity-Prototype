@@ -100,3 +100,5 @@ SLProtoAssets/**
 .idea/.idea.SL-Unity-Prototype/.idea/encodings.xml
 Assets/Scenes/Snapshots/*
 Assets/**/*.uscene
+Assets/SLRegionScene/**/*.scenegraph
+Assets/SLScenes/**/*.scenegraph
