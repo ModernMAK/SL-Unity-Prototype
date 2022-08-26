@@ -134,7 +134,18 @@ namespace SLUnity.Objects
 
         }
 
-        private void UpdateTexture(int i)
+        public void UpdateMesh(Mesh mesh)
+        {
+            _meshFilter.mesh = mesh;
+            _meshRenderer.materials = new Material[mesh.subMeshCount];
+        }
+
+        public void UpdateTextures()
+        {
+            for (var i = 0; i < _meshRenderer.materials.Length;i++) 
+                UpdateTexture(i);
+        }
+        public void UpdateTexture(int i)
         {
             var materials = _meshRenderer.materials;
             var uPrim = _primitive;
@@ -144,6 +155,43 @@ namespace SLUnity.Objects
         
             var textureUsed = useDefault ? uPrim.UnityDefaultTexture.Synchronized :  uPrim.UnityTextures[i];
             var textureInfo = useDefault ? prim.Textures.DefaultTexture : prim.Textures.FaceTextures[i];
+            if(textureUsed == null)
+                return;
+
+            var color = textureInfo.RGBA.CastUnity();
+
+            //DXT5 supports alpha; DXT1 does not
+            var hasAlpha = ((Texture2D)textureUsed).alphaIsTransparency || color.a < 0.999f || ((Texture2D)textureUsed).format == TextureFormat.DXT5;
+            var shader = hasAlpha ? AlphaShader : SimpleShader;
+            var mat = materials[i];
+            bool reassign = false;
+            if (mat == null || mat.shader != shader)
+            {
+                materials[i] = mat = new Material(shader);
+                reassign = true; //WE HAVE TO REASSIGN _meshRenderer.materials, because `materials` is a COPY!
+            }
+        
+
+            mat.SetTexture(BaseMap, textureUsed);
+            mat.SetColor(BaseColor,color);
+            mat.SetVector(Offset, new Vector2(textureInfo.OffsetU, textureInfo.OffsetV));
+            mat.SetVector(Repeat,new Vector2(textureInfo.RepeatU,textureInfo.RepeatV));
+            mat.SetFloat(Rotation,textureInfo.Rotation);
+            mat.SetFloat(Smoothness,Shiny2Smooth(textureInfo.Shiny));
+            if(reassign)
+                _meshRenderer.materials = materials;
+
+        }
+        public void UpdateTexture(int i, Primitive.TextureEntryFace faceEntry,Primitive.TextureEntryFace defaultEntry, Texture faceTex, Texture defaultTex)
+        {
+            var materials = _meshRenderer.materials;
+            var uPrim = _primitive;
+            var prim = uPrim.Self;
+        
+            var useDefault = faceTex == null;
+        
+            var textureUsed = useDefault ? defaultTex :  faceTex;
+            var textureInfo = useDefault ? defaultEntry : faceEntry;
             if(textureUsed == null)
                 return;
 

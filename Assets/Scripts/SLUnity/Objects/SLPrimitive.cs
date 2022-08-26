@@ -23,21 +23,21 @@ namespace SLUnity.Objects
         [SerializeField] [ReadOnly] private ThreadArray<Texture> _textures;
         [SerializeField] [ReadOnly] private ThreadVar<Texture> _defaultTexture;
         [SerializeField] [ReadOnly] private bool _awoken = false;
-        public Primitive Self { get; private set; }
+        public Primitive Self { get; internal set; }
         public SLTransform Transform { get; private set; }
         public Mesh UnityMesh
         {
             get => _mesh;
-            private set => _mesh = value;
+            internal set => _mesh = value;
         }
         public ThreadArray<Texture> UnityTextures {
             get => _textures;
-            private set => _textures = value;
+            internal set => _textures = value;
         
         }
         public ThreadVar<Texture> UnityDefaultTexture {
             get => _defaultTexture;
-            private set => _defaultTexture = value;
+            internal set => _defaultTexture = value;
         
         }
 

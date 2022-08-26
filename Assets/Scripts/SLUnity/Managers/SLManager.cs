@@ -23,6 +23,9 @@ namespace SLUnity.Managers
 
         public SLTerrainManager Terrain  { get; private set; }
 
+        [SerializeField]
+        private bool _assertManagers = true;
+            
         void AssertManagers()
         {
             void AssertManager(string name, object manager)
@@ -53,7 +56,8 @@ namespace SLUnity.Managers
             Threading = GetComponent<SLThreadManager>();
             Controls = GetComponent<SLControls>();
             Terrain = GetComponent<SLTerrainManager>();
-            AssertManagers();
+            if(!_assertManagers)
+                AssertManagers();
         }
     }
 }
