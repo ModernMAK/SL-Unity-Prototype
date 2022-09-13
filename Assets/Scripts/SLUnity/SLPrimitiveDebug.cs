@@ -7,14 +7,14 @@ using Vector3 = UnityEngine.Vector3;
 
 namespace SLUnity
 {
-    [RequireComponent(typeof(SLPrimitive))]
+    [RequireComponent(typeof(UPrimitive))]
     public class SLPrimitiveDebug : MonoBehaviour
     {
-        private SLPrimitive _slPrimitive;
-        private Primitive Self => _slPrimitive.Self;
+        private UPrimitive _uPrimitive;
+        private Primitive Self => _uPrimitive.Self;
         private void Awake()
         {
-            _slPrimitive = GetComponent<SLPrimitive>();
+            _uPrimitive = GetComponent<UPrimitive>();
         }
 
         private void OnEnable() => UpdateDebug();

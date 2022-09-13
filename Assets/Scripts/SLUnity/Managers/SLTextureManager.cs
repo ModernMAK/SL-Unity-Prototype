@@ -138,7 +138,7 @@ namespace SLUnity.Managers
 //     public ICollection<Texture> Values => throw new NotImplementedException();
 // }
 
-[RequireComponent(typeof(SLPrimitiveManager))]
+[RequireComponent(typeof(UPrimitiveRegistry))]
     public class SLTextureManager : SLBehaviour
     {
         // private const int MAX_REQUESTS = 16;

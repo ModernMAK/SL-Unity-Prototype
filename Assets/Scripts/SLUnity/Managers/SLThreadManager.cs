@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace SLUnity.Managers
 {
-    [RequireComponent(typeof(SLPrimitiveManager))]
+    [RequireComponent(typeof(UPrimitiveRegistry))]
     public class SLThreadManager : SLBehaviour
     {
         public ThreadRunner Unity { get; private set; }

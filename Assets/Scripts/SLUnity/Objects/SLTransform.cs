@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
@@ -12,12 +13,18 @@ namespace SLUnity.Objects
         [SerializeField]
         private Transform _container;
 
+        public UPrimitive UPrim { get; private set; }
+        public SLTransform Parent { get; private set; }
         public void SetChild(SLTransform child) => child.SetParent(this);
 
-
+        private void Awake()
+        {
+            UPrim = GetComponent<UPrimitive>();
+        }
 
         public void SetParent(SLTransform parent)
         {
+            Parent = parent;
             var container = parent._container;
             transform.parent = container;
         }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SLUnity.Threading
 {
-    public class ThreadDictionary<TKey, TValue> : ThreadableUnsafe<IDictionary<TKey, TValue>>, IDictionary<TKey, TValue>
+    public class ThreadDictionary<TKey, TValue> : ThreadableUnsafe<IDictionary<TKey, TValue>>, IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
     {
         private readonly IDictionary<TKey, TValue> _backingDict;
         public override IDictionary<TKey, TValue> Unsynchronized => _backingDict;
@@ -156,6 +156,10 @@ namespace SLUnity.Threading
                 }
             }
         }
+
+        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
+
+        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
         public ICollection<TKey> Keys
         {

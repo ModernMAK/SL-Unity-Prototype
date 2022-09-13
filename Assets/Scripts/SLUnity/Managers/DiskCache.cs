@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using SLUnity.Serialization;
 
@@ -49,6 +50,10 @@ namespace SLUnity.Managers
             {
                 value = default;
                 return false;
+            }
+            catch (SerializationException se)
+            {
+                throw new Exception($"Failed to load `{filePath}`!", se);
             }
         }
 

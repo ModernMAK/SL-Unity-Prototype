@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.Serialization;
 using FreeImageAPI;
 using OpenMetaverse.Assets;
 using SLUnity.Serialization;
@@ -23,9 +24,9 @@ namespace SLUnity.Data
                 case VERSION:
                     break; //
                 case 2:
-                    throw new Exception("Version not supported: UTexture no longer stores data as a PNG!");
+                    throw new SerializationException("Version not supported: UTexture no longer stores data as a PNG!");
                 default:
-                    throw new Exception("Version not supported!");
+                    throw new SerializationException($"Version `{version}` not supported!");
                 
             }
 

@@ -40,7 +40,9 @@ namespace SLUnity.Threading
             Global = new ThreadQueue<Action>();
             CancellationTokenSource = new CancellationTokenSource ();
         }
-    
+
+        public void Enqueue(Action value) => Global.Enqueue(value);
+        
         public void LocalizeActions()
         {
             var acts = Global.CreateCopy();

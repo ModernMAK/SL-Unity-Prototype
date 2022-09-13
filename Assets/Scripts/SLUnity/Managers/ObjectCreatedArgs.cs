@@ -5,11 +5,11 @@ namespace SLUnity.Managers
 {
     public class ObjectCreatedArgs : EventArgs
     {
-        public ObjectCreatedArgs(SLPrimitive primitive)
+        public ObjectCreatedArgs(UPrimitive primitive)
         {
             Primitive = primitive;
         }
 
-        public SLPrimitive Primitive { get; }
+        public UPrimitive Primitive { get; }
     }
 }

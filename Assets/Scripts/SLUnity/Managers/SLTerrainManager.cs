@@ -37,6 +37,35 @@ namespace SLUnity.Managers
             }
             return copy;
         }
+        public void SetTerrainHeightmap(float[,] heightMap)
+        {
+            if (heightMap.GetLength(0) != _terrainMap.Synchronized.GetLength(0) ||
+                heightMap.GetLength(1) != _terrainMap.Synchronized.GetLength(1))
+                throw new Exception("Invalid Height Map Size!");
+            lock (_terrainMap.SyncRoot)
+            {
+                var dest = _terrainMap.Unsynchronized;
+                var src = heightMap;
+                for(var x =0; x < MAP_MAX+1;x++)
+                for (var y = 0; y < MAP_MAX + 1; y++)
+                    dest[x, y] = src[x, y]; 
+            }
+            lock (_updating.SyncRoot)
+            {
+                if (!_updating.Unsynchronized)
+                {
+                    _updating.Unsynchronized = true;
+                    Manager.Threading.Data.Global.Enqueue(UpdateMesh);
+                }
+                else
+                {
+                    lock (_dirty.SyncRoot)
+                    {
+                        _dirty.Unsynchronized = true;
+                    }
+                }
+            }
+        }
         
         private void Awake()
         {
@@ -59,6 +88,11 @@ namespace SLUnity.Managers
         private void OnEnable()
         {
             Manager.Client.Terrain.LandPatchReceived += TerrainOnLandPatchReceived;
+        }
+
+        private void OnDisable()
+        {
+            Manager.Client.Terrain.LandPatchReceived -= TerrainOnLandPatchReceived;
         }
 
         private void TerrainOnLandPatchReceived(object sender, LandPatchReceivedEventArgs e)
@@ -243,11 +277,6 @@ namespace SLUnity.Managers
         }
 
 
-
-        private void OnDisable()
-        {
-            Manager.Client.Terrain.LandPatchReceived -= TerrainOnLandPatchReceived;
-        }
     
     
     }

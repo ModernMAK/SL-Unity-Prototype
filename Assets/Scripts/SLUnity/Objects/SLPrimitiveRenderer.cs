@@ -12,7 +12,7 @@ namespace SLUnity.Objects
     public class SLPrimitiveRenderer : SLBehaviour
     {
         [SerializeField]
-        private SLPrimitive _primitive;
+        private UPrimitive _primitive;
         private MeshFilter _meshFilter;
         private MeshRenderer _meshRenderer;
         private static readonly int BaseMap = Shader.PropertyToID("_AlbedoTex");
@@ -50,7 +50,7 @@ namespace SLUnity.Objects
             lock (_renderLock)
             {
                 if (_primitive == null)
-                    _primitive = GetComponent<SLPrimitive>();
+                    _primitive = GetComponent<UPrimitive>();
         
                 _meshFilter = GetComponent<MeshFilter>();
                 _meshRenderer = GetComponent<MeshRenderer>();

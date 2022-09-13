@@ -11,7 +11,8 @@ namespace SLUnity.Managers
         public static SLManager Instance { get; private set; }
         public SLClient Client { get; private set; }
         public SLTextureManager TextureManager { get; private set; }
-        public SLPrimitiveManager PrimitiveManager { get; private set; }
+        public UPrimitiveRegistry PrimitiveRegistry { get; private set; }
+        public UPrimitiveUpdateManager PrimitiveManager { get; private set; }
         public SLAvatarManager AvatarManager { get; private set; }
         public SLMeshManager MeshManager { get; private set; }
         
@@ -36,6 +37,7 @@ namespace SLUnity.Managers
             //Unfortunately; we lose name information if we iterate over an array helper containing these values; the price of sanity checks
             AssertManager(nameof(Client),Client);
             AssertManager(nameof(TextureManager),TextureManager);
+            AssertManager(nameof(PrimitiveRegistry),PrimitiveRegistry);
             AssertManager(nameof(PrimitiveManager),PrimitiveManager);
             AssertManager(nameof(AvatarManager),AvatarManager);
             AssertManager(nameof(MeshManager),MeshManager);
@@ -50,7 +52,8 @@ namespace SLUnity.Managers
             Downloader = new DownloadManager();
             Client = GetComponent<SLClient>();
             TextureManager = GetComponent<SLTextureManager>();
-            PrimitiveManager = GetComponent<SLPrimitiveManager>();
+            PrimitiveRegistry = GetComponent<UPrimitiveRegistry>();
+            PrimitiveManager = GetComponent<UPrimitiveUpdateManager>();
             AvatarManager = GetComponent<SLAvatarManager>();
             MeshManager = GetComponent<SLMeshManager>();
             Threading = GetComponent<SLThreadManager>();

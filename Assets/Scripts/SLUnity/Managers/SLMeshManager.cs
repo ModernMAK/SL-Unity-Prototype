@@ -13,7 +13,7 @@ using Mesh = UnityEngine.Mesh;
 
 namespace SLUnity.Managers
 {
-    [RequireComponent(typeof(SLPrimitiveManager))]
+    [RequireComponent(typeof(UPrimitiveRegistry))]
     public class SLMeshManager : SLBehaviour
     {
         private readonly IMeshGenerator _meshGenerator = new MeshGenerator();
@@ -38,7 +38,7 @@ namespace SLUnity.Managers
             _cache = new MeshCache();
 
             _assetCache = new AssetBundleDiskCache<UUID, Mesh>(
-                "SLProtoAssets/Mesh", 
+                "SLProtoAssets/Mesh/Highest", 
                 (uuid) => uuid.ToString(),
                 (uuid) => uuid.ToString());
             _diskCache = new MeshDiskCache();
