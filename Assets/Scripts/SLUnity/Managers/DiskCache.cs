@@ -42,7 +42,15 @@ namespace SLUnity.Managers
                 using (var file = new FileStream(filePath, FileMode.Open))
                 using (var reader = new BinaryReader(file))
                 {
-                    value = _serializer.Read(reader);
+                    try
+                    {
+                        value = _serializer.Read(reader);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new Exception($"Failed to read `{filePath}`!", e);
+                    }
+
                     return true;
                 }
             }
@@ -50,10 +58,6 @@ namespace SLUnity.Managers
             {
                 value = default;
                 return false;
-            }
-            catch (SerializationException se)
-            {
-                throw new Exception($"Failed to load `{filePath}`!", se);
             }
         }
 

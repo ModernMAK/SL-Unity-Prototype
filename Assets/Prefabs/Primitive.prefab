@@ -135,8 +135,9 @@ GameObject:
   m_Component:
   - component: {fileID: 7560611594391617667}
   - component: {fileID: 919212580832524242}
-  - component: {fileID: 4362896572665607333}
   - component: {fileID: 4375234874487684564}
+  - component: {fileID: 4362896572665607333}
+  - component: {fileID: 8918602105643553294}
   m_Layer: 0
   m_Name: Primitive
   m_TagString: Untagged
@@ -174,9 +175,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _requestedTextures: 0
   _mesh: {fileID: 0}
-  _textures: []
-  _defaultTexture: {fileID: 0}
   _awoken: 0
+--- !u!114 &4375234874487684564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8687593827432546213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48c6492dceb6be544a252a8237b479a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _mesh: {fileID: 3958750346792555744}
+  _container: {fileID: 7058278827554757008}
 --- !u!114 &4362896572665607333
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -195,17 +208,15 @@ MonoBehaviour:
   Scale: {x: 0, y: 0, z: 0}
   ParentID: 0
   ParentIsNull: 0
---- !u!114 &4375234874487684564
+--- !u!114 &8918602105643553294
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8687593827432546213}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48c6492dceb6be544a252a8237b479a8, type: 3}
+  m_Script: {fileID: 11500000, guid: dfed831c341b6794c87b3c7abd17b397, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _mesh: {fileID: 3958750346792555744}
-  _container: {fileID: 7058278827554757008}

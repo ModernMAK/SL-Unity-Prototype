@@ -15,7 +15,7 @@ namespace SLUnity.Data
 {
     public class Serializer : ISerializer<UTexture>
     {
-        private const ushort VERSION = 3;
+        private const ushort VERSION = 5;
         public UTexture Read(BinaryReader reader)
         {
             var version = reader.ReadUInt16();
@@ -23,10 +23,14 @@ namespace SLUnity.Data
             {
                 case VERSION:
                     break; //
+                case 4:
+                    throw new Exception($"Version `{version}` not supported: UTexture data is DXT1/DXT5");
+                case 3:
+                    throw new Exception($"Version `{version}` not supported: UTexture requires format to be DXT1/DXT5");
                 case 2:
-                    throw new SerializationException("Version not supported: UTexture no longer stores data as a PNG!");
+                    throw new Exception($"Version `{version}` not supported: UTexture no longer stores data as a PNG!");
                 default:
-                    throw new SerializationException($"Version `{version}` not supported!");
+                    throw new Exception($"Version `{version}` not supported!");
                 
             }
 
@@ -60,31 +64,21 @@ namespace SLUnity.Data
     public bool HasAlpha { get; private set; }
     public byte[] Data { get; private set; }
 
-    [Obsolete]
-    public static UTexture FromSL(AssetTexture assetTexture)
-    {
-        // var hasAlpha = assetTexture.Components == 4;
-        using var inStream = new MemoryStream(assetTexture.AssetData);
-        var bitmap = FreeImage.LoadFromStream(inStream);
-        if (bitmap == null)
-            throw new NullReferenceException("Bitmap is null!");
-        var hasAlpha = FreeImage.IsTransparent(bitmap);
-        // var rgb = FreeImage.GetChannel(bitmap,FREE_IMAGE_COLOR_CHANNEL.FICC_RGB);
-        using var outStream = new MemoryStream();
-        if (!FreeImage.SaveToStream(bitmap, outStream, FREE_IMAGE_FORMAT.FIF_PNG))
-            throw new InvalidOperationException("Image failed to convert (JP2->PNG)!");
-        var w = FreeImage.GetWidth(bitmap);
-        var h = FreeImage.GetHeight(bitmap);
-        return new UTexture((int)w, (int)h, outStream.GetBuffer(), hasAlpha);
-
-    }
 
 
     public Texture2D ToUnity()
     {
-        var format = HasAlpha ? TextureFormat.DXT5 : TextureFormat.DXT1;
-        var tex = new Texture2D(Width, Height, format,false);
-        tex.LoadRawTextureData(Data);
+        var tex = new Texture2D(Width, Height,TextureFormat.RGBA32,false);
+        if(!tex.LoadImage(Data))
+            throw new InvalidOperationException("Image failed to convert (PNG->Tex2D)!");
+        tex.alphaIsTransparency = HasAlpha;
+        if (HasAlpha) return tex; // Done
+        
+        var srcTex = tex; 
+        // Fix TextureFormat so we can use it to check ALPHA
+        tex = new Texture2D(Width, Height, TextureFormat.RGB24,false);
+        var colors = srcTex.GetPixels32();
+        tex.SetPixels32(colors);
         return tex;
     }
     

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
+using OpenMetaverse.ImportExport.Collada14;
 using OpenMetaverse.Rendering;
 using SLUnity.Data;
 using SLUnity.Events;
@@ -23,17 +24,19 @@ namespace SLUnity.Managers
         private static readonly IRendering MeshGen = new MeshmerizerR();
         private MeshCache _cache;
         private ThreadDictionary<UUID, Action<Mesh>> _callbacks; //THIS IS A PRETTY GARBAGE HACK! 
-        private ThreadSet<UUID> _promises;
+        // private ThreadSet<UUID> _promises;
         private MeshDiskCache _diskCache;
-        private ThreadVar<int> _taskCounter;
-        private Queue<Tuple<Primitive, Action<Mesh>>> _requestQueue;
+        // private ThreadVar<int> _taskCounter;
+        private Queue<Tuple<Primitive, Action<Mesh>>> _meshRequestQueue;
+        private Queue<Tuple<Primitive, Action<Mesh>>> _genRequestQueue;
         private AssetBundleDiskCache<UUID, Mesh> _assetCache;
 
         private void Awake()
         {
-            _promises = new ThreadSet<UUID>();
-            _taskCounter = new ThreadVar<int>();
-            _requestQueue = new Queue<Tuple<Primitive, Action<Mesh>>>();
+            // _promises = new ThreadSet<UUID>();
+            // _taskCounter = new ThreadVar<int>();
+            _genRequestQueue = new Queue<Tuple<Primitive, Action<Mesh>>>();
+            _meshRequestQueue = new Queue<Tuple<Primitive, Action<Mesh>>>();
             _callbacks = new ThreadDictionary<UUID, Action<Mesh>>();
             _cache = new MeshCache();
 
@@ -56,20 +59,41 @@ namespace SLUnity.Managers
         public int MAX_REQUESTS = 1;
         private void Update()
         {
-            if(MAX_REQUESTS >= 0)
-            //One Request Per Frame
+            if (MAX_REQUESTS >= 0)
+            {
+                
                 for (var i = 0; i < MAX_REQUESTS; i++)
                 {
-                    if (_requestQueue.Count <= 0) return;
-                    var item = _requestQueue.Dequeue();
-                    StartRequest(item.Item1,item.Item2);
+                    //  Mesh take long time for IO overhead + Download
+                    Tuple<Primitive,Action<Mesh>> request;
+                    //Alternate between gen/mesh requests
+                    if (_genRequestQueue.Count > 0 && _meshRequestQueue.Count > 0)
+                    {
+                        request = (i % 2 == 0) ? _genRequestQueue.Dequeue() : _meshRequestQueue.Dequeue();
+                    }
+                    else if (_genRequestQueue.Count > 0)
+                        request = _genRequestQueue.Dequeue();
+                    else if (_meshRequestQueue.Count > 0)
+                        request = _meshRequestQueue.Dequeue();
+                    else
+                        return;
+                    StartRequest(request.Item1,request.Item2);
                 }
+            }
+            //All Requests Per Frame
             else
-                while (_requestQueue.Count > 0)
+            {
+                while (_meshRequestQueue.Count > 0)
                 {
-                    var item = _requestQueue.Dequeue();
-                    StartRequest(item.Item1,item.Item2);
+                    var item = _meshRequestQueue.Dequeue();
+                    StartRequest(item.Item1, item.Item2);
                 }
+                while (_genRequestQueue.Count > 0)
+                {
+                    var item = _genRequestQueue.Dequeue();
+                    StartRequest(item.Item1, item.Item2);
+                }
+            }
         }
 
         // private void FixedUpdate()
@@ -134,12 +158,24 @@ namespace SLUnity.Managers
             // if(_requestQueue.Count < MAX_REQUESTS)
             //     StartRequest(primitive,callback);
             // else
-            _requestQueue.Enqueue(new Tuple<Primitive, Action<Mesh>>(primitive,callback));
+            var request = new Tuple<Primitive, Action<Mesh>>(primitive, callback);
+            switch (primitive.Type)
+            {
+                case PrimType.Mesh:
+                    _meshRequestQueue.Enqueue(request);
+                    break;
+                case PrimType.Sculpt:
+                case PrimType.Unknown:
+                    return;
+                default:
+                    _genRequestQueue.Enqueue(request);
+                    break;
+            }
         }
 
         private void StartRequest(Primitive primitive, Action<Mesh> callback)
         {            
-            _taskCounter.Synchronized += 1;
+            // _taskCounter.Synchronized += 1;
             _callbacks[primitive.ID] = callback;
             switch (primitive.Type)
             {
@@ -155,7 +191,7 @@ namespace SLUnity.Managers
                     Manager.Threading.Data.Global.Enqueue(() => GenerateMesh(primitive));
                     break;
                 case PrimType.Sculpt:
-                    _taskCounter.Synchronized -= 1;
+                    // _taskCounter.Synchronized -= 1;
                     break;
                     throw new NotSupportedException();
                 case PrimType.Mesh:
@@ -218,6 +254,11 @@ namespace SLUnity.Managers
             
             void GenMesh(AssetMesh assetMesh)
             {
+                if (assetMesh == null)
+                {
+                    Debug.Log("DEBUG MESH:Failed to download mesh!");
+                    return;
+                }
                 Debug.Log("Decoding Mesh From Downloaded Data");
                 // var meshData = _meshGenerator.GenerateMeshData(assetMesh);
                 if (FacetedMesh.TryDecodeFromAsset(primitive, assetMesh, DetailLevel.Highest, out var slMesh))

@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
+using UnityEngine;
 using UnityEngine.Networking;
 
 namespace SLUnity
@@ -28,7 +29,7 @@ namespace SLUnity
         {
             var handler = new HttpClientHandler()
             {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
             };
             _client = new HttpClient(handler);
         }
@@ -37,6 +38,10 @@ namespace SLUnity
         public async Task DownloadAsync(Uri uri, Action<byte[]> callback)
         {
             var request = await _client.GetAsync(uri);
+            if (!request.IsSuccessStatusCode)
+            {
+                callback(null);
+            }
             var data = await request.Content.ReadAsByteArrayAsync();
             callback(data);
         }
@@ -52,7 +57,7 @@ namespace SLUnity
         {
             void Callback(byte[] meshData)
             {
-                var assetMesh = new AssetMesh(meshId,meshData);
+                var assetMesh = meshData != null ? new AssetMesh(meshId,meshData) : null;
                 callback(assetMesh);
             }
             var uri = GetMeshURI(meshId);
@@ -64,7 +69,7 @@ namespace SLUnity
         {
             void Callback(byte[] textureData)
             {
-                var assetTexture = new AssetTexture(textureId,textureData);
+                var assetTexture = textureData != null ? new AssetTexture(textureId,textureData) : null;
                 callback(assetTexture);
             }
             var uri = GetTextureURI(textureId);

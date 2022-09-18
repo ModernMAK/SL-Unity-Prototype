@@ -50,6 +50,10 @@ public class RegionLoader : MonoBehaviour
             _container = new GameObject("Primitives");
         if(_invalid == null)
             _invalid = new GameObject("Bad Primitives");
+    }
+
+    private void OnEnable()
+    {
         Load();
     }
 
@@ -87,18 +91,19 @@ public class RegionLoader : MonoBehaviour
                 
                 if(prim.Type == PrimType.Mesh && prim.ID != UUID.Zero)
                 {
-                    if (meshMode.ContainsKey(prim.ID))
-                        meshMode[prim.ID]++;
+                    var meshID = prim.Sculpt.SculptTexture;
+                    if (meshMode.ContainsKey(meshID))
+                        meshMode[meshID]++;
                     else
                     {
-                        meshMode[prim.ID] = 1;
-                        meshes.Add(prim.ID);
-                        mesh2Prim[prim.ID] = prim;
+                        meshMode[meshID] = 1;
+                        meshes.Add(meshID);
+                        mesh2Prim[meshID] = prim;
                     }
                 }
                 var defTex = prim.Textures.DefaultTexture;
                 var faceTexs = prim.Textures.FaceTextures;
-                if(defTex.TextureID != UUID.Zero)
+                if(defTex != null && defTex.TextureID != UUID.Zero)
                 {
                     if (textureMode.ContainsKey(defTex.TextureID))
                         textureMode[defTex.TextureID]++;
@@ -109,7 +114,7 @@ public class RegionLoader : MonoBehaviour
                     }
                 }
                 foreach(var faceTex in faceTexs)
-                    if(faceTex.TextureID != UUID.Zero)
+                    if(faceTex != null && faceTex.TextureID != UUID.Zero)
                     {
                         if (textureMode.ContainsKey(faceTex.TextureID))
                             textureMode[faceTex.TextureID]++;
@@ -120,14 +125,55 @@ public class RegionLoader : MonoBehaviour
                         }
                     }
             }
-            //High to Low; invert CompareTo
+            //High to Low
             meshes.Sort(((l, r) => -meshMode[l].CompareTo(meshMode[r])));
             textures.Sort(((l, r) => -textureMode[l].CompareTo(textureMode[r])));
 
+            
             foreach(var meshID in meshes)
+            {
+                if(meshMode[meshID] == 1)
+                    break; // Dont preload assets only used once
                 manager.MeshManager.RequestMesh(mesh2Prim[meshID],(mesh => { }));
+            }
             foreach(var texID in textures)
+            {
+                if(textureMode[texID] == 1)
+                    break; // Dont preload assets only used once
                 manager.TextureManager.RequestTexture(texID,(tex => { }));
+            }
+            
+            // var meshIndex = 0;
+            // var texIndex = 0;
+            // while (meshIndex < meshes.Count && texIndex < textures.Count)
+            // {
+            //     var meshID = meshes[meshIndex];
+            //     var texID = textures[texIndex];
+            //     var meshFreq = meshMode[meshID];
+            //     var texFreq = textureMode[texID];
+            //
+            //     if (meshFreq >= texFreq)
+            //     {
+            //         manager.MeshManager.RequestMesh(mesh2Prim[meshID],(mesh => { }));
+            //         meshIndex++;
+            //     }
+            //     else
+            //     {
+            //         manager.TextureManager.RequestTexture(texID,(tex => { }));
+            //         texIndex++;
+            //     }
+            //
+            // }
+            // for(;meshIndex < meshes.Count; meshIndex++)
+            // {
+            //     var meshID = meshes[meshIndex];
+            //     manager.MeshManager.RequestMesh(mesh2Prim[meshID],(mesh => { }));
+            // }
+            // for(;texIndex < textures.Count; texIndex++)
+            // {
+            //     var texID = textures[texIndex];
+            //     manager.TextureManager.RequestTexture(texID,(tex => { }));
+            // }
             
             // This is the buggiest part of the code; because our 'Requests' want to create Prims, but we also want to create prims
             //      It would be best to Create all prims first from the graph; then register, then allow SL to update; but then we have to cache the evnts and replay them

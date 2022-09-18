@@ -123,6 +123,90 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1001 &870351491
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_RootOrder
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047648, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047650, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047650, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: LoginToken
+      value: 
+      objectReference: {fileID: 11400000, guid: d51ad67ca6779774883797372b83ac9e, type: 2}
+    - target: {fileID: 8985385356577047652, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: MAX_REQUESTS
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047654, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: m_Name
+      value: SL Manager
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047662, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: MAX_REQUESTS
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 8985385356577047663, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+      propertyPath: UnityActions
+      value: 64
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 8985385356577047656, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+    - {fileID: 8985385356577047659, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+  m_SourcePrefab: {fileID: 100100000, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+--- !u!1 &870351492 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5597794685611316892, guid: e6ece8e6101c69342bd4f896840b2c3d, type: 3}
+  m_PrefabInstance: {fileID: 870351491}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1059324849
 GameObject:
   m_ObjectHideFlags: 0
@@ -134,7 +218,7 @@ GameObject:
   - component: {fileID: 1059324851}
   - component: {fileID: 1059324850}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Loader
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -156,7 +240,8 @@ MonoBehaviour:
   _file: Current Scene.scenegraph
   _terrain: {fileID: 6621504595146597849, guid: 2d4aa29da36423149aa0f4a8054c2327, type: 3}
   _primitive: {fileID: 8687593827432546213, guid: b4f58469a3e642d409c60599321d4bdf, type: 3}
-  _container: {fileID: 0}
+  _container: {fileID: 870351492}
+  _invalid: {fileID: 0}
 --- !u!4 &1059324851
 Transform:
   m_ObjectHideFlags: 0

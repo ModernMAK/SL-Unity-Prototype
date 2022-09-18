@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using FreeImageAPI;
 using OpenMetaverse;
 using OpenMetaverse.Assets;
 using SLUnity.Data;
@@ -242,7 +243,7 @@ namespace SLUnity.Managers
             if (!_diskCache.Load(id, out var tex))
             {
                 // Manager.Threading.Data.Global.Enqueue(() => DownloadTexture(id));
-                Manager.Threading.IO.Global.Enqueue(() => DownloadTextureCoroutine(id));
+                Manager.Threading.IO.Global.Enqueue(() => DownloadTexture(id));
             }
             else
             {
@@ -256,15 +257,16 @@ namespace SLUnity.Managers
         {
             TextureCreated?.Invoke(this, e);
         }
-        private void DownloadTexture(UUID texture)
-        {
-            Manager.Client.Assets.RequestImage(texture, ImageType.Normal, GetDownloadCallback(texture,0));
-        }
 
-        private void DownloadTextureCoroutine(UUID texture)
+        private void DownloadTexture(UUID texture)
         {
             void Callback(AssetTexture assetTexture)
             {
+                if (assetTexture == null)
+                {
+                    Debug.Log("DEBUG TEXTURE:Failed to download texture!");
+                    return;
+                }
                 Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID, assetTexture));
             }
 
@@ -274,31 +276,6 @@ namespace SLUnity.Managers
 
         }
 
-        private TextureDownloadCallback GetDownloadCallback(UUID textureId, int tries)
-        {
-            const int MAX_TRIES = 3;
-            void TextureDownloaded(TextureRequestState state, AssetTexture assetTexture)
-            {
-                switch (state)
-                {
-                    case TextureRequestState.Finished:
-                        Manager.Threading.Data.Global.Enqueue(() => ConvertTexture(assetTexture.AssetID, assetTexture));
-                        break;
-                    case TextureRequestState.NotFound when tries >= MAX_TRIES:
-                        throw new Exception("Texture download not found!");
-                    case TextureRequestState.NotFound:
-                        Manager.Client.Assets.RequestImage(textureId, ImageType.Normal, GetDownloadCallback(textureId,tries+1));
-                        break;
-                    case TextureRequestState.Timeout when tries >= MAX_TRIES:
-                        throw new Exception("Texture download timed out!");
-                    case TextureRequestState.Timeout:
-                        Manager.Client.Assets.RequestImage(textureId, ImageType.Normal, GetDownloadCallback(textureId,tries+1));
-                        break;
-                }
-            }
-
-            return TextureDownloaded;
-        }
     
         // private void ConvertTexture(UUID id, AssetTexture slTexture)
         // {
@@ -309,17 +286,33 @@ namespace SLUnity.Managers
         // }
         private UTexture CreateUTex(byte[] jpeg2000)
         {
-            
-            using (var image = new MagickImage(jpeg2000))
-            {
-                var hasAlpha = image.HasAlpha;
-                var format = hasAlpha ? MagickFormat.Dxt5 : MagickFormat.Dxt1;
-                image.Format = format;
-                var dxt = image.ToByteArray();
-                var w = image.Width;
-                var h = image.Height;
-                return new UTexture(w, h, dxt, hasAlpha);
-            }
+            using var inStream = new MemoryStream(jpeg2000);
+            var bitmap = FreeImage.LoadFromStream(inStream);
+            var hasAlpha = FreeImage.IsTransparent(bitmap);
+            // var rgb = FreeImage.GetChannel(bitmap,FREE_IMAGE_COLOR_CHANNEL.FICC_RGB);
+            using var outStream = new MemoryStream();
+            if (!FreeImage.SaveToStream(bitmap, outStream, FREE_IMAGE_FORMAT.FIF_PNG))
+                throw new InvalidOperationException("Image failed to convert (JP2->PNG)!");
+            var w = FreeImage.GetWidth(bitmap);
+            var h = FreeImage.GetHeight(bitmap);
+            return new UTexture((int)w, (int)h, outStream.GetBuffer(), hasAlpha);
+            // using (var image = new MagickImage(jpeg2000))
+            // {
+            //     var hasAlpha = image.HasAlpha;
+            //     // var format =
+            //     image.Format =  MagickFormat.Png;
+            //     // image.Compression = hasAlpha ? CompressionMethod.DXT5 : CompressionMethod.DXT1;
+            //     byte[] dxt;
+            //     using (var memStream = new MemoryStream())
+            //     {
+            //         image.Write(memStream);
+            //         dxt = memStream.ToArray();
+            //     }
+            //     
+            //     var w = image.Width;
+            //     var h = image.Height;
+            //     return new UTexture(w, h, dxt, hasAlpha);
+            // }
         }
 
         private void ConvertTexture(UUID id, AssetTexture slTexture)

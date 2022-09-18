@@ -112,7 +112,11 @@ namespace SLUnity.Objects
             var fTexts = Self.Textures.FaceTextures;
         
             var defTex = Self.Textures.DefaultTexture;
-            Manager.TextureManager.RequestTexture(defTex.TextureID,(tex) => DefaultTextureFetched(tex,defTex.TextureID));
+            if (defTex != null)
+            {
+                Manager.TextureManager.RequestTexture(defTex.TextureID,(tex) => DefaultTextureFetched(tex,defTex.TextureID));
+                _requestedTextures++;
+            }
             for(var i = 0; i < UnityTextures.Count; i++)
             {
                 var faceTex = fTexts[i];
